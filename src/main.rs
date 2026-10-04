@@ -19,7 +19,7 @@ mod views;
 use crate::parser::parse_cyberdeck_script;
 use crate::types::CyberdeckState;
 use axum::{
-    routing::{delete, get, post},
+    routing::{get, post},
     Router,
 };
 use std::sync::Arc;
@@ -102,9 +102,6 @@ async fn main() {
         .route("/cyberdeck/api/action", post(routes::post_cyberdeck_action))
         .route("/cyberdeck/api/list", get(routes::list_diagnostics))
         .route("/api/cybergrid/themes", get(cybergrid::list_themes))
-        .route("/api/cybergrid/themes", post(cybergrid::save_theme))
-        .route("/api/cybergrid/validate", post(cybergrid::validate_theme))
-        .route("/api/cybergrid/themes/:id", delete(cybergrid::delete_theme))
         .route("/api/cybergrid/active/:id", post(cybergrid::select_theme))
         .route(
             "/api/cybergrid/appearance/:mode",

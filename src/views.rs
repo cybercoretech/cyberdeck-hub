@@ -57,91 +57,12 @@ pub fn layout(
       </div>
       </div>
       <button type="button" class="btn-ghost" id="theme-appearance" onclick="toggleAppearance()">{appearance} mode</button>
-      <button class="btn-ghost" onclick="openThemeCreator()" title="Create and save a shared Cybercore theme">+ Theme</button>
+      <a class="btn-ghost" href="http://127.0.0.1:8761/" target="_blank" rel="noopener" title="Open the standalone Cybercore Theme Studio">Theme Studio ↗</a>
   </div>
 </header>
 <main>
 {body}
 </main>
-<div id="theme-creator-overlay" class="viewer-overlay" hidden onclick="if(event.target===this) closeThemeCreator()">
-  <div class="window viewer-window ct-window">
-    <div class="titlebar">
-      <span class="dot dot-a"></span><span class="dot dot-b"></span><span class="dot dot-c"></span>
-      <span class="titlebar-text">custom CYBERGRID theme</span>
-      <a href="javascript:void(0)" class="win-close" onclick="closeThemeCreator()" title="Close">&#10005;</a>
-    </div>
-    <div class="viewer-body">
-      <div class="ct-layout">
-        <div class="ct-controls">
-          <p class="muted" style="margin-top:0;">Create a shared theme for Cybercore apps. Save it to your user theme library or export a portable theme file.</p>
-          <label class="field-label" for="ct-name">Name</label>
-          <input id="ct-name" class="text-input" placeholder="my-custom-theme" style="width:100%;margin-bottom:0.75rem;">
-          <label class="field-label" for="ct-family">Family</label>
-          <input id="ct-family" class="text-input" value="custom" maxlength="96">
-          <label class="field-label" for="ct-description">Description</label>
-          <input id="ct-description" class="text-input" maxlength="256">
-          <label class="field-label" for="ct-author">Author</label>
-          <input id="ct-author" class="text-input" maxlength="96" style="margin-bottom:0.75rem;">
-          <div class="card-actions" style="margin-bottom:0.75rem;">
-            <button type="button" onclick="document.getElementById('ct-file-input').click()">Import from file&hellip;</button>
-            <button type="button" onclick="exportCustomTheme()">Export to file</button>
-            <button type="button" onclick="resetSwatchesToActive()">Reset to active</button>
-            <input type="file" id="ct-file-input" accept=".json,application/json" hidden onchange="loadThemeFromFile(event)">
-          </div>
-          <label class="field-label" for="ct-mode">Appearance</label>
-          <select id="ct-mode" class="text-input" onchange="changeThemeMode()"><option value="dark">Dark variant</option><option value="light">Light variant</option></select>
-          <label class="field-label" for="ct-font-ui">UI font</label>
-          <input id="ct-font-ui" class="text-input" value="Inter" oninput="previewCustomTheme()">
-          <label class="field-label" for="ct-font-mono">Monospace font</label>
-          <input id="ct-font-mono" class="text-input" value="JetBrains Mono" oninput="previewCustomTheme()">
-          <label class="field-label" for="ct-font-display">Display font</label>
-          <input id="ct-font-display" class="text-input" value="Oxanium" oninput="previewCustomTheme()">
-          <label class="field-label" for="ct-density">Density</label>
-          <select id="ct-density" class="text-input" onchange="previewCustomTheme()"><option>compact</option><option selected>comfortable</option><option>spacious</option></select>
-          <label class="field-label" for="ct-corners">Corners</label>
-          <select id="ct-corners" class="text-input" onchange="previewCustomTheme()"><option>sharp</option><option>soft</option><option>rounded</option></select>
-          <label class="field-label" for="ct-motion">Motion</label>
-          <select id="ct-motion" class="text-input" onchange="previewCustomTheme()"><option>full</option><option>reduced</option><option>none</option></select>
-          <p id="ct-contrast" class="muted" role="status" aria-live="polite"></p>
-          <div id="ct-swatches" class="ct-grid"></div>
-        </div>
-        <div class="ct-preview">
-          <p class="field-label" style="margin-bottom:0.6rem;">Live preview</p>
-          <div class="dash-head" style="margin-bottom:0.9rem;">
-            <h1>Sample</h1>
-            <p class="muted">This pane, and everything below it, repaints as you edit.</p>
-          </div>
-          <div class="card" style="margin-bottom:0.9rem;">
-            <div class="card-head">
-              <span class="card-title">Sample Tool</span>
-              <span class="badge status-running">ONLINE</span>
-            </div>
-            <p class="card-desc">A card looks like this under your theme.</p>
-            <p class="card-meta"><code>~/tools/example</code></p>
-            <div class="card-actions">
-              <button type="button">Run</button>
-              <a class="btn-link" href="javascript:void(0)">View</a>
-            </div>
-          </div>
-          <div style="display:flex; gap:0.4rem; flex-wrap:wrap; margin-bottom:0.9rem;">
-            <span class="folder-chip" style="--chip-color:var(--cyan);">cyan</span>
-            <span class="folder-chip" style="--chip-color:var(--purple);">purple</span>
-            <span class="folder-chip" style="--chip-color:var(--orange);">orange</span>
-            <span class="folder-chip-root">root</span>
-          </div>
-          <div class="markdown-body" style="max-height:none;">
-            <h2>Heading</h2>
-            <p>Body text with <code>inline code</code> and a <a href="javascript:void(0)">link</a>.</p>
-          </div>
-        </div>
-      </div>
-      <div class="viewer-actions">
-        <button onclick="saveCustomTheme()">Save</button>
-        <button onclick="closeThemeCreator()">Close</button>
-      </div>
-    </div>
-  </div>
-</div>
 <div id="viewer-overlay" class="viewer-overlay" hidden onclick="if(event.target===this) closeViewer()">
   <div class="window viewer-window">
     <div class="titlebar">
@@ -160,19 +81,16 @@ pub fn layout(
 </div>
 <script>
 let ACTIVE_APPEARANCE = '{appearance}';
+let ACTIVE_THEME_ID = '{active_theme}';
 function applyTheme(name) {{
-  if (name.startsWith('custom:')) {{
-    const css = localStorage.getItem(CT_PREFIX + name.slice(7));
-    if (css) document.getElementById('theme-vars').textContent = css;
-  }} else {{
-    fetch('/api/cybergrid/css/' + encodeURIComponent(name) + '?appearance=' + ACTIVE_APPEARANCE)
-      .then(r => {{ if (!r.ok) throw new Error('Theme unavailable'); return r.text(); }})
-      .then(css => {{ document.getElementById('theme-vars').textContent = css; }})
-      .catch(error => console.error(error));
-    fetch('/api/cybergrid/active/' + encodeURIComponent(name), {{ method: 'POST' }})
-      .catch(error => console.error('Could not save active theme', error));
-  }}
-  document.getElementById('theme-picker-label').textContent = name.startsWith('custom:') ? name.slice(7) : name;
+  ACTIVE_THEME_ID = name;
+  fetch('/api/cybergrid/css/' + encodeURIComponent(name) + '?appearance=' + ACTIVE_APPEARANCE)
+    .then(r => {{ if (!r.ok) throw new Error('Theme unavailable'); return r.text(); }})
+    .then(css => {{ document.getElementById('theme-vars').textContent = css; }})
+    .catch(error => console.error(error));
+  fetch('/api/cybergrid/active/' + encodeURIComponent(name), {{ method: 'POST' }})
+    .catch(error => console.error('Could not save active theme', error));
+  document.getElementById('theme-picker-label').textContent = name;
   document.querySelectorAll('#theme-dropdown .theme-item').forEach(el => {{
     el.classList.toggle('selected', el.dataset.value === name);
   }});
@@ -265,207 +183,26 @@ function closeViewer() {{
   document.getElementById('viewer-overlay').hidden = true;
 }}
 document.addEventListener('keydown', e => {{
-  if (e.key === 'Escape') {{ closeViewer(); closeThemeCreator(); }}
+  if (e.key === 'Escape') {{ closeViewer(); }}
 }});
 
-// --- Shared CYBERGRID theme creator. Drafts preview locally; saved
-// documents and the selected theme are persisted by the shared engine. ---
-const CT_ROLES = ['bg', 'fg', 'acid', 'pink', 'purple', 'cyan', 'orange', 'red', 'panel', 'line', 'muted'];
-const CT_PREFIX = 'cyberdeck-custom-theme-';
-
-function openThemeCreator() {{
-  CT_PREVIOUS_THEME = document.querySelector('#theme-dropdown .theme-item.selected')?.dataset.value || '{active_theme}';
-  CT_MODE = 'dark'; CT_VARIANTS = {{}};
-  document.getElementById('ct-name').value = '';
-  document.getElementById('ct-family').value = 'custom';
-  document.getElementById('ct-description').value = '';
-  document.getElementById('ct-author').value = '';
-  document.getElementById('ct-mode').value = 'dark';
-  const grid = document.getElementById('ct-swatches');
-  const computed = getComputedStyle(document.documentElement);
-  grid.innerHTML = CT_ROLES.map(role => {{
-    const current = computed.getPropertyValue('--' + role).trim() || '#888888';
-    return '<label class="ct-swatch">' + role +
-      '<input type="color" id="ct-' + role + '" value="' + current + '" oninput="previewCustomTheme()"></label>';
-  }}).join('');
-  previewCustomTheme();
-  document.getElementById('theme-creator-overlay').hidden = false;
-}}
-function closeThemeCreator() {{
-  const el = document.getElementById('theme-creator-overlay');
-  if (el) el.hidden = true;
-  // Revert to whatever was actually saved/active — closing without Save
-  // shouldn't leave an unsaved preview painted over the real theme.
-  applyTheme(CT_PREVIOUS_THEME);
-}}
-function customThemeCss() {{
-  const doc = customThemeDocument(), palette = CT_MODE === 'light' ? (doc.variants.light || doc.palette) : doc.palette;
-  const safeFont = value => /^[A-Za-z0-9 _-]{{1,64}}$/.test(value) ? value : 'Inter';
-  const vars = {{'--bg': palette.bg, '--fg': palette.white, '--acid': palette.acid_green, '--pink': palette.hot_pink,
-    '--purple': palette.purple, '--cyan': palette.cyan, '--orange': palette.orange, '--red': palette.red,
-    '--panel': palette.panel, '--line': palette.line, '--muted': palette.muted,
-    '--font-ui': '"' + safeFont(doc.design.font_ui) + '",sans-serif', '--font-mono': '"' + safeFont(doc.design.font_mono) + '",monospace',
-    '--font-display': '"' + safeFont(doc.design.font_display) + '",sans-serif', '--density': {{compact: '0.85', comfortable: '1', spacious: '1.15'}}[doc.design.density],
-    '--radius': {{sharp: '2px', soft: '8px', rounded: '14px'}}[doc.design.corners],
-    '--dur-mid': {{full: '0.24s', reduced: '0.08s', none: '0s'}}[doc.design.motion]}};
-  const colors = ['--bg','--fg','--acid','--pink','--purple','--cyan','--orange','--red','--panel','--line','--muted'];
-  return ':root{{' + Object.entries(vars).map(([key,value]) => key + ':' + (colors.includes(key) ? '#' + value.replace('#','') : value) + ';').join('') + '}}';
-}}
-async function previewCustomTheme() {{
-  document.getElementById('theme-vars').textContent = customThemeCss();
-  try {{
-    const response = await fetch('/api/cybergrid/validate', {{method: 'POST', headers: {{'Content-Type': 'application/json'}}, body: JSON.stringify(customThemeDocument())}});
-    const report = await response.json();
-    const contrast = CT_MODE === 'light' ? (report.light_contrast || report.contrast) : report.contrast;
-    const failed = (contrast?.checks || []).filter(check => !check.passes);
-    document.getElementById('ct-contrast').textContent = report.error || (failed.length ? 'Contrast needs attention: ' + failed.map(check => check.label + ' (' + check.ratio.toFixed(2) + ':1)').join(', ') : 'Contrast checks pass for tested text and accent pairs.');
-  }} catch (_) {{ document.getElementById('ct-contrast').textContent = 'Contrast check unavailable.'; }}
-}}
-// Accepts the exact same JSON shape as a real cybercore theme file
-// (schema/themes/<family>/<slug>.json — bare hex, no leading '#', field
-// names bg/white/acid_green/hot_pink/purple/cyan/orange/red/panel/line/
-// muted) so any of the 72 shipped themes, or a hand-authored file
-// following that schema, can be dropped in directly.
-const CT_FILE_KEY_MAP = {{
-  bg: 'bg', white: 'fg', acid_green: 'acid', hot_pink: 'pink', purple: 'purple',
-  cyan: 'cyan', orange: 'orange', red: 'red', panel: 'panel', line: 'line', muted: 'muted'
-}};
-let CT_VARIANTS = {{}};
-let CT_MODE = 'dark';
-let CT_PREVIOUS_THEME = '{active_theme}';
-
-function currentPalette() {{
-  const palette = {{}};
-  Object.entries(CT_FILE_KEY_MAP).forEach(([jsonKey, role]) => {{ palette[jsonKey] = document.getElementById('ct-' + role).value.replace('#', ''); }});
-  return palette;
-}}
-function showPalette(palette) {{
-  Object.entries(CT_FILE_KEY_MAP).forEach(([jsonKey, role]) => {{
-    const input = document.getElementById('ct-' + role);
-    if (input) input.value = '#' + (palette?.[jsonKey] || '888888').replace('#', '');
-  }});
-}}
-function changeThemeMode() {{
-  CT_VARIANTS[CT_MODE] = currentPalette();
-  CT_MODE = document.getElementById('ct-mode').value;
-  showPalette(CT_MODE === 'light' ? CT_VARIANTS.light : CT_VARIANTS.dark);
-  previewCustomTheme();
-}}
-function designValues() {{
-  return {{font_ui: document.getElementById('ct-font-ui').value, font_mono: document.getElementById('ct-font-mono').value,
-    font_display: document.getElementById('ct-font-display').value, density: document.getElementById('ct-density').value,
-    corners: document.getElementById('ct-corners').value, motion: document.getElementById('ct-motion').value}};
-}}
-function customThemeDocument() {{
-  CT_VARIANTS[CT_MODE] = currentPalette();
-  const name = document.getElementById('ct-name').value.trim() || 'Untitled theme';
-  const id = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 64) || 'custom-theme';
-  const dark = CT_VARIANTS.dark || CT_VARIANTS.light || currentPalette();
-  const variants = CT_VARIANTS.light ? {{light: CT_VARIANTS.light}} : {{}};
-  return {{format_version: 1, metadata: {{id, name, family: document.getElementById('ct-family').value.trim() || 'custom', description: document.getElementById('ct-description').value, author: document.getElementById('ct-author').value}}, palette: dark, variants, design: designValues()}};
-}}
-function loadThemeFromFile(event) {{
-  const file = event.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = () => {{
-    let data;
-    try {{ data = JSON.parse(reader.result); }} catch (e) {{
-      alert('Not valid JSON.'); return;
-    }}
-    const palette = data.palette || data;
-    let applied = 0;
-    Object.entries(CT_FILE_KEY_MAP).forEach(([jsonKey, role]) => {{
-      const raw = palette[jsonKey];
-      if (typeof raw !== 'string' || !raw) return;
-      const hex = raw.startsWith('#') ? raw : '#' + raw;
-      const input = document.getElementById('ct-' + role);
-      if (input) {{ input.value = hex; applied++; }}
-    }});
-    if (!applied) {{
-      alert('That JSON has none of the expected fields (bg, white, acid_green, hot_pink, purple, cyan, orange, red, panel, line, muted) — expected the cybercore palette shape.');
-      return;
-    }}
-    CT_VARIANTS = data.variants && typeof data.variants === 'object' ? data.variants : {{}};
-    if (data.palette) {{ CT_VARIANTS.dark = data.palette; CT_MODE = 'dark'; }}
-    document.getElementById('ct-mode').value = CT_MODE;
-    showPalette(CT_MODE === 'light' ? CT_VARIANTS.light : CT_VARIANTS.dark || palette);
-    if (data.metadata) {{
-      const metadata = data.metadata;
-      document.getElementById('ct-name').value = data.metadata.name || data.metadata.id || file.name.replace(/\.json$/i, '');
-      document.getElementById('ct-family').value = metadata.family || 'custom';
-      document.getElementById('ct-description').value = metadata.description || '';
-      document.getElementById('ct-author').value = metadata.author || '';
-    }} else {{
-      document.getElementById('ct-name').value = file.name.replace(/\.json$/i, '');
-    }}
-    if (data.design) {{
-      for (const key of ['font_ui','font_mono','font_display']) {{
-        if (typeof data.design[key] === 'string') document.getElementById('ct-' + key.replace('_', '-')).value = data.design[key];
-      }}
-      for (const key of ['density','corners','motion']) {{
-        if (typeof data.design[key] === 'string') document.getElementById('ct-' + key).value = data.design[key];
-      }}
-    }}
-    if (!document.getElementById('ct-name').value.trim()) {{
-      document.getElementById('ct-name').value = file.name.replace(/\.json$/i, '');
-    }}
-    previewCustomTheme();
-  }};
-  reader.readAsText(file);
-}}
-function exportCustomTheme() {{
-  const name = document.getElementById('ct-name').value.trim() || 'custom-theme';
-  document.getElementById('ct-name').value = name;
-  const data = customThemeDocument();
-  const blob = new Blob([JSON.stringify(data, null, 2)], {{ type: 'application/json' }});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = name + '.json';
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}}
-function resetSwatchesToActive() {{
-  // Reads the *actually saved* theme, not whatever's currently painted —
-  // this dialog may already be mid-preview of unsaved edits, and "reset"
-  // should mean "back to what was really active before I opened this."
-  applyTheme(CT_PREVIOUS_THEME);
-  const computed = getComputedStyle(document.documentElement);
-  CT_ROLES.forEach(role => {{
-    const input = document.getElementById('ct-' + role);
-    if (input) input.value = computed.getPropertyValue('--' + role).trim() || '#888888';
-  }});
-}}
-async function saveCustomTheme() {{
-  const name = document.getElementById('ct-name').value.trim();
-  if (!name) {{ alert('Name it first.'); return; }}
-  document.getElementById('ct-name').value = name;
-  const response = await fetch('/api/cybergrid/themes', {{method: 'POST', headers: {{'Content-Type': 'application/json'}}, body: JSON.stringify(customThemeDocument())}});
-  const result = await response.json();
-  if (!response.ok) {{ alert(result.error || 'Could not save theme.'); return; }}
-  await loadCustomThemesIntoPicker();
-  CT_PREVIOUS_THEME = result.id;
-  applyTheme(result.id);
-  document.getElementById('theme-creator-overlay').hidden = true;
-}}
+// Keep the Hub picker current with themes created in Cybercore Theme Studio.
 async function loadCustomThemesIntoPicker() {{
   const group = document.getElementById('custom-theme-group');
-  let themes = [];
-  try {{ const response = await fetch('/api/cybergrid/themes'); if (response.ok) themes = (await response.json()).themes.filter(theme => !theme.builtin); }} catch (_) {{}}
-  const keys = Object.keys(localStorage).filter(k => k.startsWith(CT_PREFIX));
-  if (!themes.length && !keys.length) {{ group.hidden = true; group.innerHTML = ''; return; }}
-  group.hidden = false;
-  group.replaceChildren();
-  const title = document.createElement('div'); title.className = 'theme-group-label'; title.textContent = 'Custom themes'; group.appendChild(title);
-  for (const theme of themes) {{
-    const item = document.createElement('div'); item.className = 'theme-item'; item.dataset.value = theme.id; item.textContent = theme.name;
-    item.addEventListener('click', () => selectTheme(theme.id)); group.appendChild(item);
-  }}
-  for (const key of keys) {{
-    const name = key.slice(CT_PREFIX.length), item = document.createElement('div');
-    item.className = 'theme-item'; item.dataset.value = 'custom:' + name; item.textContent = name;
-    item.addEventListener('click', () => selectTheme('custom:' + name)); group.appendChild(item);
-  }}
+  try {{
+    const response = await fetch('/api/cybergrid/themes');
+    if (!response.ok) throw new Error('theme catalog unavailable');
+    const themes = (await response.json()).themes.filter(theme => !theme.builtin);
+    group.replaceChildren();
+    if (!themes.length) {{ group.hidden = true; return; }}
+    group.hidden = false;
+    const title = document.createElement('div'); title.className = 'theme-group-label'; title.textContent = 'Custom themes'; group.appendChild(title);
+    for (const theme of themes) {{
+      const item = document.createElement('div'); item.className = 'theme-item'; item.dataset.value = theme.id; item.textContent = theme.name;
+      item.classList.toggle('selected', theme.id === ACTIVE_THEME_ID);
+      item.addEventListener('click', () => selectTheme(theme.id)); group.appendChild(item);
+    }}
+  }} catch (error) {{ console.error('Could not load custom themes', error); }}
 }}
 </script>
 </body>

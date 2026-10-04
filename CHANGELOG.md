@@ -85,11 +85,8 @@ This release marks the transition of CYBERDECK from an experimental alpha to a s
 
 - Integrated the shared Cybercore theme catalog into the Hub picker, CSS
   endpoint, and active-theme/appearance persistence.
-- Expanded the theme creator with versioned document import/export, optional
-  light palettes, typography/density/corners/motion controls, and contrast
-  feedback before saving.
-- Added custom-theme save, select, and delete API routes backed by the shared
-  Cybercore user theme directory.
+- Replaced the in-Hub creator modal with a direct link to the standalone
+  Cybercore Theme Studio, which owns editing and custom-theme APIs.
 
 ### Changed
 

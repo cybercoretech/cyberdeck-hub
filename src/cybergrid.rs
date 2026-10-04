@@ -21,6 +21,9 @@ pub fn theme_families() -> Vec<(String, Vec<String>)> {
     let mut families: std::collections::BTreeMap<String, Vec<String>> =
         std::collections::BTreeMap::new();
     for (id, entry) in catalog.iter() {
+        if !entry.builtin {
+            continue;
+        }
         families
             .entry(entry.document.metadata.family.clone())
             .or_default()
@@ -105,37 +108,6 @@ pub async fn theme_css(Path(id): Path<String>, query: axum::extract::Query<CssQu
         .into_response()
 }
 
-pub async fn save_theme(Json(document): Json<cybercore::theme::ThemeDocument>) -> Response {
-    let mut catalog = match catalog() {
-        Ok(catalog) => catalog,
-        Err(error) => return self::error(StatusCode::BAD_REQUEST, error),
-    };
-    match catalog.save(document.clone()) {
-        Ok(()) => (
-            StatusCode::CREATED,
-            Json(json!({ "id": document.metadata.id, "name": document.metadata.name })),
-        )
-            .into_response(),
-        Err(error) => self::error(StatusCode::BAD_REQUEST, error),
-    }
-}
-
-pub async fn validate_theme(Json(document): Json<cybercore::theme::ThemeDocument>) -> Response {
-    if let Err(error) = document.validate() {
-        return self::error(StatusCode::BAD_REQUEST, error);
-    }
-    let light = document
-        .variants
-        .contains_key(&cybercore::theme::Appearance::Light)
-        .then(|| document.contrast_report(cybercore::theme::Appearance::Light));
-    Json(json!({
-        "valid": true,
-        "contrast": document.contrast_report(cybercore::theme::Appearance::Dark),
-        "light_contrast": light,
-    }))
-    .into_response()
-}
-
 pub async fn select_theme(Path(id): Path<String>) -> Response {
     let mut catalog = match catalog() {
         Ok(catalog) => catalog,
@@ -159,18 +131,6 @@ pub async fn select_appearance(Path(appearance): Path<String>) -> Response {
     };
     match catalog.set_appearance(appearance) {
         Ok(()) => Json(json!({ "appearance": appearance })).into_response(),
-        Err(error) => self::error(StatusCode::BAD_REQUEST, error),
-    }
-}
-
-pub async fn delete_theme(Path(id): Path<String>) -> Response {
-    let mut catalog = match catalog() {
-        Ok(catalog) => catalog,
-        Err(error) => return self::error(StatusCode::BAD_REQUEST, error),
-    };
-    match catalog.remove_custom(&id) {
-        Ok(true) => StatusCode::NO_CONTENT.into_response(),
-        Ok(false) => StatusCode::NOT_FOUND.into_response(),
         Err(error) => self::error(StatusCode::BAD_REQUEST, error),
     }
 }

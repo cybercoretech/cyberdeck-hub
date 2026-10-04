@@ -1,19 +1,17 @@
 # 📟 CYBERDECK
 
-## Shared CYBERGRID theme engine
+## Shared CYBERGRID themes
 
-Cyberdeck Hub's theme picker and creator use the Cybercore `ThemeCatalog`.
-Select a built-in palette or create a custom theme with a dark palette,
-optional light variant, typography, density, corners, and motion settings.
-The creator validates palette colors and reports common text/accent contrast,
-imports legacy flat palette JSON or versioned documents, and exports the
-versioned JSON format.
+The Hub theme picker reads the shared Cybercore `ThemeCatalog`, including
+custom themes saved by [Cybercore Theme Studio](../../framework/cybercore/theme-studio/README.md).
+Start the Studio with `cargo run --manifest-path ../../framework/cybercore/theme-studio/Cargo.toml`;
+the Hub's **Theme Studio** link opens its default address at
+`http://127.0.0.1:8761/`.
 
-Saved themes and the active appearance live in the shared per-user Cybercore
-configuration directory (`$XDG_CONFIG_HOME/cybercore`, or
-`~/.config/cybercore`). Other apps using the same Cybercore crate can load
-those documents without rebuilding. See the [theme engine contract](../../framework/cybercore/docs/theme-engine.md)
-for the JSON shape, validation limits, and Rust APIs.
+Themes and the active appearance live in the per-user Cybercore configuration
+directory (`$XDG_CONFIG_HOME/cybercore`, or `~/.config/cybercore`). See the
+[theme engine contract](../../framework/cybercore/docs/theme-engine.md) for
+the portable JSON shape, validation rules, and Rust APIs.
 
 ### *Systems Intelligence Framework (Arch Linux / Debian)*
 
