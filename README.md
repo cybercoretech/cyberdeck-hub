@@ -3,14 +3,14 @@
 ## Shared CYBERGRID themes
 
 The Hub theme picker reads the shared Cybercore `ThemeCatalog`, including
-custom themes saved by [Cybercore Theme Studio](../../framework/cybercore/theme-studio/README.md).
-Start the Studio with `cargo run --manifest-path ../../framework/cybercore/theme-studio/Cargo.toml`;
+custom themes saved by [Cybercore Theme Studio](https://github.com/cybercore-tech/cybercore/tree/main/theme-studio).
+From a Cybercore checkout, start the Studio with `cargo run -p cybercore-theme-studio`;
 the Hub's highlighted **CYBERCORE // THEME STUDIO** header link and home-page
 callout open its default address at `http://127.0.0.1:8761/`.
 
 Themes and the active appearance live in the per-user Cybercore configuration
 directory (`$XDG_CONFIG_HOME/cybercore`, or `~/.config/cybercore`). See the
-[theme engine contract](../../framework/cybercore/docs/theme-engine.md) for
+[theme engine contract](https://github.com/cybercore-tech/cybercore/blob/main/docs/theme-engine.md) for
 the portable JSON shape, validation rules, and Rust APIs.
 
 ### *Systems Intelligence Framework (Arch Linux / Debian)*

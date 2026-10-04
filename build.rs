@@ -20,7 +20,7 @@ fn to_slug(name: &str) -> String {
 // Helper: Formats "tech-heavy" filenames into "Readable Titles"
 fn clean_title(name: &str) -> String {
     // 1. Remove leading numbers and underscores (e.g., "01_code" -> "code")
-    let cleaned = name.trim_start_matches(|c: char| c.is_digit(10) || c == '_');
+    let cleaned = name.trim_start_matches(|c: char| c.is_ascii_digit() || c == '_');
 
     // 2. Strip out the "tech" noise
     let cleaned = cleaned

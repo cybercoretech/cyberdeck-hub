@@ -18,9 +18,10 @@ tracing-subscriber = "0.3"
 futures-util = "0.3"
 pulldown-cmark = "0.12"
 
-# shared CYBERGRID palette + design tokens — same bridge pattern as dockspace's
-# cybergrid.rs. From crates.io so the hub builds from a clean checkout.
-cybercore = "0.5"
+# Shared CYBERGRID theme documents/catalog and design tokens. The catalog API
+# is newer than the published 0.6 crate, so pin this exact upstream commit
+# until its next crates.io release.
+cybercore = { git = "https://github.com/cybercore-tech/cybercore", rev = "614a5864cac14b43996e5fe7c003a93a8d5f1dad" }
 
 [build-dependencies]
 # These will allow the script to scan the files and parse the text
