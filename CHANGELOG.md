@@ -87,6 +87,7 @@ This release marks the transition of CYBERDECK from an experimental alpha to a s
   endpoint, and active-theme/appearance persistence.
 - Replaced the in-Hub creator modal with a direct link to the standalone
   **CYBERCORE // THEME STUDIO**, which owns editing and custom-theme APIs.
+- Added highlighted launch links in the Hub header and dashboard home page.
 
 ### Changed
 

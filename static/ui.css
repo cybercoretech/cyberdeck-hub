@@ -126,6 +126,12 @@ body {
 .brand-accent { color: var(--cyan); text-shadow: 0 0 10px color-mix(in srgb, var(--cyan) 60%, transparent); }
 .topbar-right { display: flex; align-items: center; gap: 0.75rem; }
 .topbar-nav { display: flex; align-items: center; gap: 0.5rem; }
+.theme-studio-link { color: var(--bg); background: var(--acid); border-color: var(--acid); font-weight: 700; white-space: nowrap; }
+.theme-studio-link:hover { color: var(--bg); background: var(--cyan); border-color: var(--cyan); }
+.studio-callout { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin: 0 0 1.2rem; padding: 1rem 1.2rem; border: 1px solid var(--acid); border-radius: 4px; background: color-mix(in srgb, var(--acid) 7%, var(--panel)); }
+.studio-callout strong, .studio-callout span { display: block; }
+.studio-callout strong { color: var(--acid); letter-spacing: .07em; }
+.studio-callout span { color: var(--muted); font-size: .85rem; margin-top: .2rem; }
 
 /* --------------------------------------------------------------------------
    Theme picker — a custom dropdown, not a native <select>. Chromium
@@ -563,6 +569,8 @@ select.text-input option {
 
 @media (max-width: 640px) {
   .topbar { flex-direction: column; gap: 0.6rem; align-items: stretch; }
+  .topbar-right { flex-wrap: wrap; }
+  .studio-callout { align-items: flex-start; flex-direction: column; }
   .grid { grid-template-columns: 1fr; }
   .viewer-overlay { padding: 0.5rem; }
 }

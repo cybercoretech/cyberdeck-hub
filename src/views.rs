@@ -57,7 +57,7 @@ pub fn layout(
       </div>
       </div>
       <button type="button" class="btn-ghost" id="theme-appearance" onclick="toggleAppearance()">{appearance} mode</button>
-      <a class="btn-ghost" href="http://127.0.0.1:8761/" target="_blank" rel="noopener" title="Open the standalone CYBERCORE // THEME STUDIO">CYBERCORE // THEME STUDIO ↗</a>
+      <a class="btn-ghost theme-studio-link" href="http://127.0.0.1:8761/" target="_blank" rel="noopener" title="Open the standalone CYBERCORE // THEME STUDIO">CYBERCORE // THEME STUDIO ↗</a>
   </div>
 </header>
 <main>
@@ -324,6 +324,10 @@ pub fn dashboard(checked: &[Checked]) -> String {
   <h1>Tool Fleet</h1>
   <p class="muted">{up} / {total} reporting up — auto-refreshes every 10s.</p>
 </div>
+<section class="studio-callout" aria-label="Cybercore Theme Studio">
+  <div><strong>CYBERCORE // THEME STUDIO</strong><span>Create, preview, validate, and share themes across Cybercore apps.</span></div>
+  <a class="btn-ghost theme-studio-link" href="http://127.0.0.1:8761/" target="_blank" rel="noopener">OPEN THEME STUDIO ↗</a>
+</section>
 <div id="hub-grid" hx-get="/partial/hub" hx-trigger="every 10s" hx-swap="innerHTML" hx-on::after-swap="restoreCatState()">
 {sections}
 </div>"#
