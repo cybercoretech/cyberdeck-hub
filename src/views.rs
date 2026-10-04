@@ -57,7 +57,7 @@ pub fn layout(
       </div>
       </div>
       <button type="button" class="btn-ghost" id="theme-appearance" onclick="toggleAppearance()">{appearance} mode</button>
-      <a class="btn-ghost" href="http://127.0.0.1:8761/" target="_blank" rel="noopener" title="Open the standalone Cybercore Theme Studio">Theme Studio ↗</a>
+      <a class="btn-ghost" href="http://127.0.0.1:8761/" target="_blank" rel="noopener" title="Open the standalone CYBERCORE // THEME STUDIO">CYBERCORE // THEME STUDIO ↗</a>
   </div>
 </header>
 <main>

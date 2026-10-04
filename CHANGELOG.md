@@ -86,7 +86,7 @@ This release marks the transition of CYBERDECK from an experimental alpha to a s
 - Integrated the shared Cybercore theme catalog into the Hub picker, CSS
   endpoint, and active-theme/appearance persistence.
 - Replaced the in-Hub creator modal with a direct link to the standalone
-  Cybercore Theme Studio, which owns editing and custom-theme APIs.
+  **CYBERCORE // THEME STUDIO**, which owns editing and custom-theme APIs.
 
 ### Changed
 
