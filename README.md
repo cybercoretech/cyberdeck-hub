@@ -1,5 +1,20 @@
 # 📟 CYBERDECK
 
+## Shared CYBERGRID theme engine
+
+Cyberdeck Hub's theme picker and creator use the Cybercore `ThemeCatalog`.
+Select a built-in palette or create a custom theme with a dark palette,
+optional light variant, typography, density, corners, and motion settings.
+The creator validates palette colors and reports common text/accent contrast,
+imports legacy flat palette JSON or versioned documents, and exports the
+versioned JSON format.
+
+Saved themes and the active appearance live in the shared per-user Cybercore
+configuration directory (`$XDG_CONFIG_HOME/cybercore`, or
+`~/.config/cybercore`). Other apps using the same Cybercore crate can load
+those documents without rebuilding. See the [theme engine contract](../../framework/cybercore/docs/theme-engine.md)
+for the JSON shape, validation limits, and Rust APIs.
+
 ### *Systems Intelligence Framework (Arch Linux / Debian)*
 
 <img src="images/screenshot.png" alt="Cyberdeck Screenshot" width="800">

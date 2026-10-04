@@ -79,3 +79,19 @@ This release marks the transition of CYBERDECK from an experimental alpha to a s
 ### Fixed
 - **Configuration:** Resolved `book.toml` deserialization errors regarding CSS and chapter numbering.
 - **Build Pathing:** Cleaned up technical noise from generated filenames.
+# Unreleased
+
+### Added
+
+- Integrated the shared Cybercore theme catalog into the Hub picker, CSS
+  endpoint, and active-theme/appearance persistence.
+- Expanded the theme creator with versioned document import/export, optional
+  light palettes, typography/density/corners/motion controls, and contrast
+  feedback before saving.
+- Added custom-theme save, select, and delete API routes backed by the shared
+  Cybercore user theme directory.
+
+### Changed
+
+- Theme families now come from embedded metadata rather than source-checkout
+  filesystem heuristics. Existing built-in palettes remain selectable.

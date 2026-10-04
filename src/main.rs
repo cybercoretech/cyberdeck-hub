@@ -19,7 +19,7 @@ mod views;
 use crate::parser::parse_cyberdeck_script;
 use crate::types::CyberdeckState;
 use axum::{
-    routing::{get, post},
+    routing::{delete, get, post},
     Router,
 };
 use std::sync::Arc;
@@ -57,14 +57,29 @@ async fn main() {
             use crate::types::CyberdeckCommand::*;
             let dir = || "./diagnostics".to_string();
             let commands = vec![
-                RunCpuModule(dir()), RunHardwareModule(dir()), RunPowerModule(dir()),
-                RunMemoryModule(dir()), RunStorageAiModule(dir()), RunThermalModule(dir()),
-                RunNetworkModule(dir()), RunFanModule(dir()), RunAudioModule(dir()),
-                RunBiosModule(dir()), RunDisksModule(dir()), RunBatteryModule(dir()),
-                RunServicesModule(dir()), RunMotherboardModule(dir()), RunGpuModule(dir()),
-                RunUsbModule(dir()), RunKernelModulesModule(dir()), RunMountsModule(dir()),
+                RunCpuModule(dir()),
+                RunHardwareModule(dir()),
+                RunPowerModule(dir()),
+                RunMemoryModule(dir()),
+                RunStorageAiModule(dir()),
+                RunThermalModule(dir()),
+                RunNetworkModule(dir()),
+                RunFanModule(dir()),
+                RunAudioModule(dir()),
+                RunBiosModule(dir()),
+                RunDisksModule(dir()),
+                RunBatteryModule(dir()),
+                RunServicesModule(dir()),
+                RunMotherboardModule(dir()),
+                RunGpuModule(dir()),
+                RunUsbModule(dir()),
+                RunKernelModulesModule(dir()),
+                RunMountsModule(dir()),
             ];
-            tracing::info!("auto-refresh: regenerating {} scan reports in the background", commands.len());
+            tracing::info!(
+                "auto-refresh: regenerating {} scan reports in the background",
+                commands.len()
+            );
             for cmd in commands {
                 dispatcher::execute_cyberdeck_command(cmd, &bg_state).await;
             }
@@ -80,10 +95,21 @@ async fn main() {
         .route("/reports/*path", get(routes::report_view))
         .route("/api/reports/*path", get(routes::report_fragment))
         .route("/cyberdeck/api/state", get(routes::get_cyberdeck_state))
-        .route("/cyberdeck/api/command", post(routes::post_cyberdeck_command))
+        .route(
+            "/cyberdeck/api/command",
+            post(routes::post_cyberdeck_command),
+        )
         .route("/cyberdeck/api/action", post(routes::post_cyberdeck_action))
         .route("/cyberdeck/api/list", get(routes::list_diagnostics))
         .route("/api/cybergrid/themes", get(cybergrid::list_themes))
+        .route("/api/cybergrid/themes", post(cybergrid::save_theme))
+        .route("/api/cybergrid/validate", post(cybergrid::validate_theme))
+        .route("/api/cybergrid/themes/:id", delete(cybergrid::delete_theme))
+        .route("/api/cybergrid/active/:id", post(cybergrid::select_theme))
+        .route(
+            "/api/cybergrid/appearance/:mode",
+            post(cybergrid::select_appearance),
+        )
         .route("/api/cybergrid/css/:name", get(cybergrid::theme_css))
         .route("/vendor/tokens.css", get(routes::tokens_css))
         .nest_service("/static", ServeDir::new("static"))

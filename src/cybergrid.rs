@@ -1,119 +1,176 @@
-//! CYBERGRID palette bridge — same pattern as dockspace's `src/cybergrid.rs`.
-//! Exposes the shared `cybercore` crate's named colour themes over HTTP so
-//! the hub can list and apply them. Replaces the old bespoke
-//! `static/themes/sub-cyber/*.json` picker entirely.
-//!
-//! - `GET /api/cybergrid/themes`      — every theme + its 11 colour roles
-//! - `GET /api/cybergrid/css/:name`   — a ready `:root{ --bg:#… }` block
+//! CYBERGRID bridge to the shared Cybercore theme engine.
 
-use axum::{extract::Path, http::header, response::IntoResponse, Json};
+use axum::{
+    extract::Path,
+    http::{header, StatusCode},
+    response::{IntoResponse, Response},
+    Json,
+};
 use serde_json::{json, Value};
-use std::collections::BTreeMap;
 
-/// `family name -> slugs`, read straight off cybercore's real
-/// `schema/themes/<family>/<slug>.json` folder layout (path dep, so this
-/// is a stable relative path at compile time via `CARGO_MANIFEST_DIR`).
-/// Not derivable from the slug alone: most families share a `<family>-
-/// <word>` naming convention, but the `default` family is a grab-bag of
-/// well-known theme names (`dracula`, `nord`, ...) plus a curated
-/// re-export of a few themes that live under other families too — a
-/// slug-prefix heuristic would misfile or duplicate those.
-pub fn theme_families() -> BTreeMap<String, Vec<String>> {
-    let mut families = BTreeMap::new();
-    let Some(rd) = themes_dir().and_then(|d| std::fs::read_dir(d).ok()) else {
-        // No schema folder on this machine: still offer every embedded
-        // theme, as one group, rather than an empty menu.
-        let schema = cybercore::schema::load();
-        families.insert(
-            "all".to_string(),
-            schema.theme_names().map(str::to_string).collect(),
-        );
-        return families;
+fn catalog() -> Result<cybercore::theme::ThemeCatalog, cybercore::theme::ThemeError> {
+    cybercore::theme::ThemeCatalog::load()
+}
+
+/// Group names come from embedded theme metadata, not slug guesses or a
+/// checkout-specific read of the Cybercore source tree.
+pub fn theme_families() -> Vec<(String, Vec<String>)> {
+    let Ok(catalog) = catalog() else {
+        return Vec::new();
     };
-    for family_entry in rd.filter_map(|e| e.ok()) {
-        if !family_entry.path().is_dir() {
-            continue;
-        }
-        let family = family_entry.file_name().to_string_lossy().into_owned();
-        let mut slugs: Vec<String> = std::fs::read_dir(family_entry.path())
-            .map(|rd| {
-                rd.filter_map(|e| e.ok())
-                    .filter_map(|e| {
-                        let name = e.file_name().to_string_lossy().into_owned();
-                        name.strip_suffix(".json").map(str::to_string)
-                    })
-                    .collect()
-            })
-            .unwrap_or_default();
-        slugs.sort();
-        families.insert(family, slugs);
+    let mut families: std::collections::BTreeMap<String, Vec<String>> =
+        std::collections::BTreeMap::new();
+    for (id, entry) in catalog.iter() {
+        families
+            .entry(entry.document.metadata.family.clone())
+            .or_default()
+            .push(id.to_string());
     }
-    families
+    families.into_iter().collect()
 }
 
-/// cybercore's `schema/themes` folder. The hub has been checked out next to
-/// cybercore (darkbox: `~/.sysops/{cyberdeck,cybercore}`) and in the
-/// Devspace layout (`core/cyberdeck-hub` + `framework/cybercore`), so try
-/// both, then the `~/.sysops/cybercore` link.
-fn themes_dir() -> Option<std::path::PathBuf> {
-    let manifest = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
-    let mut candidates = vec![
-        manifest.join("../cybercore/schema/themes"),
-        manifest.join("../../framework/cybercore/schema/themes"),
-    ];
-    if let Some(home) = std::env::var_os("HOME") {
-        candidates.push(std::path::Path::new(&home).join(".sysops/cybercore/schema/themes"));
-    }
-    candidates.into_iter().find(|d| d.is_dir())
-}
-
-fn role_map(name: &str, p: &cybercore::schema::Palette) -> Value {
+fn palette_json(palette: &cybercore::schema::Palette) -> Value {
     json!({
-        "name": name,
-        "bg": p.bg,
-        "white": p.white,
-        "acid_green": p.acid_green,
-        "hot_pink": p.hot_pink,
-        "purple": p.purple,
-        "cyan": p.cyan,
-        "orange": p.orange,
-        "red": p.red,
-        "panel": p.panel,
-        "line": p.line,
-        "muted": p.muted,
+        "bg": palette.bg,
+        "white": palette.white,
+        "acid_green": palette.acid_green,
+        "hot_pink": palette.hot_pink,
+        "purple": palette.purple,
+        "cyan": palette.cyan,
+        "orange": palette.orange,
+        "red": palette.red,
+        "panel": palette.panel,
+        "line": palette.line,
+        "muted": palette.muted,
     })
 }
 
-pub async fn list_themes() -> impl IntoResponse {
-    let s = cybercore::schema::load();
-    let themes: Vec<Value> = s
-        .theme_names()
-        .filter_map(|n| s.theme(n).map(|p| role_map(n, p)))
-        .collect();
-    Json(json!({ "active": s.active, "themes": themes }))
+fn error(status: StatusCode, message: impl ToString) -> Response {
+    (status, Json(json!({ "error": message.to_string() }))).into_response()
 }
 
-pub async fn theme_css(Path(name): Path<String>) -> impl IntoResponse {
-    let s = cybercore::schema::load();
-    let p = s.theme(&name).unwrap_or_else(|| s.active_theme());
-    let css = format!(
-        ":root{{\
---bg:#{bg};--fg:#{white};\
---acid:#{acid};--pink:#{pink};--purple:#{purple};--cyan:#{cyan};\
---orange:#{orange};--red:#{red};\
---panel:#{panel};--line:#{line};--muted:#{muted};\
-}}\n",
-        bg = p.bg,
-        white = p.white,
-        acid = p.acid_green,
-        pink = p.hot_pink,
-        purple = p.purple,
-        cyan = p.cyan,
-        orange = p.orange,
-        red = p.red,
-        panel = p.panel,
-        line = p.line,
-        muted = p.muted,
-    );
-    ([(header::CONTENT_TYPE, "text/css; charset=utf-8")], css)
+pub async fn list_themes() -> Response {
+    let Ok(catalog) = catalog() else {
+        return error(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "could not load theme catalog",
+        );
+    };
+    let themes: Vec<Value> = catalog
+        .iter()
+        .map(|(id, entry)| {
+            let document = &entry.document;
+            json!({
+                "id": id,
+                "name": document.metadata.name,
+                "family": document.metadata.family,
+                "description": document.metadata.description,
+                "author": document.metadata.author,
+                "builtin": entry.builtin,
+                "palette": palette_json(&document.palette),
+                "variants": document.variants,
+                "design": document.design,
+            })
+        })
+        .collect();
+    Json(json!({
+        "active": catalog.active_id(),
+        "appearance": catalog.active_appearance(),
+        "themes": themes
+    }))
+    .into_response()
+}
+
+#[derive(serde::Deserialize)]
+pub struct CssQuery {
+    appearance: Option<cybercore::theme::Appearance>,
+}
+
+pub async fn theme_css(Path(id): Path<String>, query: axum::extract::Query<CssQuery>) -> Response {
+    let Ok(catalog) = catalog() else {
+        return error(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "could not load theme catalog",
+        );
+    };
+    let Some(entry) = catalog.get(&id) else {
+        return error(StatusCode::NOT_FOUND, "theme not found");
+    };
+    (
+        [(header::CONTENT_TYPE, "text/css; charset=utf-8")],
+        entry
+            .document
+            .to_css(query.appearance.unwrap_or(catalog.active_appearance())),
+    )
+        .into_response()
+}
+
+pub async fn save_theme(Json(document): Json<cybercore::theme::ThemeDocument>) -> Response {
+    let mut catalog = match catalog() {
+        Ok(catalog) => catalog,
+        Err(error) => return self::error(StatusCode::BAD_REQUEST, error),
+    };
+    match catalog.save(document.clone()) {
+        Ok(()) => (
+            StatusCode::CREATED,
+            Json(json!({ "id": document.metadata.id, "name": document.metadata.name })),
+        )
+            .into_response(),
+        Err(error) => self::error(StatusCode::BAD_REQUEST, error),
+    }
+}
+
+pub async fn validate_theme(Json(document): Json<cybercore::theme::ThemeDocument>) -> Response {
+    if let Err(error) = document.validate() {
+        return self::error(StatusCode::BAD_REQUEST, error);
+    }
+    let light = document
+        .variants
+        .contains_key(&cybercore::theme::Appearance::Light)
+        .then(|| document.contrast_report(cybercore::theme::Appearance::Light));
+    Json(json!({
+        "valid": true,
+        "contrast": document.contrast_report(cybercore::theme::Appearance::Dark),
+        "light_contrast": light,
+    }))
+    .into_response()
+}
+
+pub async fn select_theme(Path(id): Path<String>) -> Response {
+    let mut catalog = match catalog() {
+        Ok(catalog) => catalog,
+        Err(error) => return self::error(StatusCode::BAD_REQUEST, error),
+    };
+    match catalog.select(&id) {
+        Ok(()) => Json(json!({ "active": id })).into_response(),
+        Err(error) => self::error(StatusCode::BAD_REQUEST, error),
+    }
+}
+
+pub async fn select_appearance(Path(appearance): Path<String>) -> Response {
+    let appearance = match appearance.as_str() {
+        "dark" => cybercore::theme::Appearance::Dark,
+        "light" => cybercore::theme::Appearance::Light,
+        _ => return error(StatusCode::BAD_REQUEST, "appearance must be dark or light"),
+    };
+    let mut catalog = match catalog() {
+        Ok(catalog) => catalog,
+        Err(error) => return self::error(StatusCode::BAD_REQUEST, error),
+    };
+    match catalog.set_appearance(appearance) {
+        Ok(()) => Json(json!({ "appearance": appearance })).into_response(),
+        Err(error) => self::error(StatusCode::BAD_REQUEST, error),
+    }
+}
+
+pub async fn delete_theme(Path(id): Path<String>) -> Response {
+    let mut catalog = match catalog() {
+        Ok(catalog) => catalog,
+        Err(error) => return self::error(StatusCode::BAD_REQUEST, error),
+    };
+    match catalog.remove_custom(&id) {
+        Ok(true) => StatusCode::NO_CONTENT.into_response(),
+        Ok(false) => StatusCode::NOT_FOUND.into_response(),
+        Err(error) => self::error(StatusCode::BAD_REQUEST, error),
+    }
 }

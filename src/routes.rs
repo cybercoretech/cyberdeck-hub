@@ -21,8 +21,14 @@ use serde::{Deserialize, Serialize};
 /// name + the full theme list for the picker dropdown — same helper as
 /// Dockspace's `page()`.
 fn page(nav_active: &str, body: String) -> Html<String> {
-    let schema = cybercore::schema::load();
-    let active = schema.active.clone();
+    let catalog = cybercore::theme::ThemeCatalog::load().ok();
+    let active = catalog
+        .as_ref()
+        .map(|catalog| catalog.active_id().to_string())
+        .unwrap_or_else(|| cybercore::schema::load().active.clone());
+    let appearance = catalog
+        .map(|catalog| catalog.active_appearance())
+        .unwrap_or_default();
     let families = crate::cybergrid::theme_families();
 
     // A custom dropdown, not a native <select> — browsers force their own
@@ -34,11 +40,6 @@ fn page(nav_active: &str, body: String) -> Html<String> {
         .map(|(family, slugs)| {
             let items: String = slugs
                 .iter()
-                // Only list slugs the compiled schema actually knows about
-                // — the on-disk folder and the binary's embedded merge can
-                // drift (themes are merged at *compile time*; a new file
-                // needs a rebuild before it's real).
-                .filter(|slug| schema.theme(slug).is_some())
                 .map(|slug| {
                     let sel = if **slug == active { " selected" } else { "" };
                     format!(
@@ -49,11 +50,20 @@ fn page(nav_active: &str, body: String) -> Html<String> {
             if items.is_empty() {
                 String::new()
             } else {
-                format!(r#"<div class="theme-group-label">{family}</div>{items}"#)
+                format!(
+                    r#"<div class="theme-group-label">{}</div>{items}"#,
+                    views::escape(family)
+                )
             }
         })
         .collect();
-    Html(views::layout(&active, &options, nav_active, &body))
+    Html(views::layout(
+        &active,
+        appearance.as_str(),
+        &options,
+        nav_active,
+        &body,
+    ))
 }
 
 pub async fn get_index_page() -> Html<String> {
@@ -94,7 +104,9 @@ pub struct ReportEntry {
 /// whole tree rather than assuming everything sits flat in `diagnostics/`.
 /// `prefix` is the path built up so far, relative to `diagnostics/`.
 fn collect_md_files(dir: &std::path::Path, prefix: &str, out: &mut Vec<ReportEntry>) {
-    let Ok(rd) = std::fs::read_dir(dir) else { return };
+    let Ok(rd) = std::fs::read_dir(dir) else {
+        return;
+    };
     for entry in rd.filter_map(|e| e.ok()) {
         let Ok(meta) = entry.metadata() else { continue };
         let name = entry.file_name().to_string_lossy().into_owned();
@@ -151,7 +163,11 @@ pub async fn report_view(AxPath(rel_path): AxPath<String>) -> impl IntoResponse 
     // fetch()/navigation from cache with no explicit signal not to.
     let no_cache = [(axum::http::header::CACHE_CONTROL, "no-store")];
     let Some(path) = safe_diagnostics_path(&rel_path) else {
-        return (axum::http::StatusCode::BAD_REQUEST, no_cache, page("Reports", "<p>invalid report path</p>".to_string()));
+        return (
+            axum::http::StatusCode::BAD_REQUEST,
+            no_cache,
+            page("Reports", "<p>invalid report path</p>".to_string()),
+        );
     };
     let Ok(content) = std::fs::read_to_string(&path) else {
         return (
@@ -161,7 +177,11 @@ pub async fn report_view(AxPath(rel_path): AxPath<String>) -> impl IntoResponse 
         );
     };
     let title = present::extract_title(&content, &rel_path);
-    (axum::http::StatusCode::OK, no_cache, page("Reports", views::report_view(&title, &rel_path, &content)))
+    (
+        axum::http::StatusCode::OK,
+        no_cache,
+        page("Reports", views::report_view(&title, &rel_path, &content)),
+    )
 }
 
 /// The same content as `report_view`, rendered without page chrome — for
@@ -174,7 +194,10 @@ pub async fn report_fragment(AxPath(rel_path): AxPath<String>) -> impl IntoRespo
         return (
             axum::http::StatusCode::BAD_REQUEST,
             [
-                (axum::http::header::CACHE_CONTROL.as_str(), "no-store".to_string()),
+                (
+                    axum::http::header::CACHE_CONTROL.as_str(),
+                    "no-store".to_string(),
+                ),
                 ("X-Report-Title", "Invalid path".to_string()),
             ],
             Html("<p>invalid report path</p>".to_string()),
@@ -184,7 +207,10 @@ pub async fn report_fragment(AxPath(rel_path): AxPath<String>) -> impl IntoRespo
         return (
             axum::http::StatusCode::NOT_FOUND,
             [
-                (axum::http::header::CACHE_CONTROL.as_str(), "no-store".to_string()),
+                (
+                    axum::http::header::CACHE_CONTROL.as_str(),
+                    "no-store".to_string(),
+                ),
                 ("X-Report-Title", "No report yet".to_string()),
             ],
             Html(views::report_missing_fragment(&rel_path)),
@@ -194,7 +220,10 @@ pub async fn report_fragment(AxPath(rel_path): AxPath<String>) -> impl IntoRespo
     (
         axum::http::StatusCode::OK,
         [
-            (axum::http::header::CACHE_CONTROL.as_str(), "no-store".to_string()),
+            (
+                axum::http::header::CACHE_CONTROL.as_str(),
+                "no-store".to_string(),
+            ),
             ("X-Report-Title", title),
         ],
         Html(views::report_fragment(&content)),
@@ -259,13 +288,19 @@ pub struct FileEntry {
 /// listing used to hide everything written into a module's own
 /// subdirectory, which is most of them.
 fn collect_all_files(dir: &std::path::Path, prefix: &str, out: &mut Vec<FileEntry>) {
-    let Ok(rd) = std::fs::read_dir(dir) else { return };
+    let Ok(rd) = std::fs::read_dir(dir) else {
+        return;
+    };
     let mut entries: Vec<_> = rd.filter_map(|e| e.ok()).collect();
     entries.sort_by_key(|e| e.file_name());
     for entry in entries {
         let Ok(meta) = entry.metadata() else { continue };
         let name = entry.file_name().to_string_lossy().into_owned();
-        let rel = if prefix.is_empty() { name.clone() } else { format!("{prefix}/{name}") };
+        let rel = if prefix.is_empty() {
+            name.clone()
+        } else {
+            format!("{prefix}/{name}")
+        };
         if meta.is_dir() {
             collect_all_files(&entry.path(), &rel, out);
         } else {

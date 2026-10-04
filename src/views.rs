@@ -12,7 +12,13 @@ pub fn escape(s: &str) -> String {
         .replace('>', "&gt;")
 }
 
-pub fn layout(active_theme: &str, theme_options: &str, nav_active: &str, body: &str) -> String {
+pub fn layout(
+    active_theme: &str,
+    appearance: &str,
+    theme_options: &str,
+    nav_active: &str,
+    body: &str,
+) -> String {
     let nav = |href: &str, label: &str| {
         let active = if nav_active == label { " active" } else { "" };
         format!(r#"<a href="{href}" class="btn-ghost{active}">{label}</a>"#)
@@ -41,7 +47,7 @@ pub fn layout(active_theme: &str, theme_options: &str, nav_active: &str, body: &
       {nav_scans}
       {nav_reports}
     </nav>
-    <div class="theme-dropdown-wrap">
+      <div class="theme-dropdown-wrap">
       <button type="button" class="btn-ghost" id="theme-picker-btn" onclick="toggleDropdown(event, 'theme-dropdown')" aria-haspopup="listbox" aria-expanded="false">
         <span id="theme-picker-label">THEME</span> <span class="caret-down">&#9662;</span>
       </button>
@@ -49,8 +55,9 @@ pub fn layout(active_theme: &str, theme_options: &str, nav_active: &str, body: &
         {theme_options}
         <div id="custom-theme-group" hidden></div>
       </div>
-    </div>
-    <button class="btn-ghost" onclick="openThemeCreator()" title="Build a custom theme (saved to this browser only)">+ Theme</button>
+      </div>
+      <button type="button" class="btn-ghost" id="theme-appearance" onclick="toggleAppearance()">{appearance} mode</button>
+      <button class="btn-ghost" onclick="openThemeCreator()" title="Create and save a shared Cybercore theme">+ Theme</button>
   </div>
 </header>
 <main>
@@ -60,22 +67,42 @@ pub fn layout(active_theme: &str, theme_options: &str, nav_active: &str, body: &
   <div class="window viewer-window ct-window">
     <div class="titlebar">
       <span class="dot dot-a"></span><span class="dot dot-b"></span><span class="dot dot-c"></span>
-      <span class="titlebar-text">custom theme (this browser only)</span>
+      <span class="titlebar-text">custom CYBERGRID theme</span>
       <a href="javascript:void(0)" class="win-close" onclick="closeThemeCreator()" title="Close">&#10005;</a>
     </div>
     <div class="viewer-body">
       <div class="ct-layout">
         <div class="ct-controls">
-          <p class="muted" style="margin-top:0;">Not added to the shared CYBERGRID palette (that's compiled in and needs a rebuild) — this is a local custom theme saved to this browser's storage only.</p>
+          <p class="muted" style="margin-top:0;">Create a shared theme for Cybercore apps. Save it to your user theme library or export a portable theme file.</p>
           <label class="field-label" for="ct-name">Name</label>
           <input id="ct-name" class="text-input" placeholder="my-custom-theme" style="width:100%;margin-bottom:0.75rem;">
+          <label class="field-label" for="ct-family">Family</label>
+          <input id="ct-family" class="text-input" value="custom" maxlength="96">
+          <label class="field-label" for="ct-description">Description</label>
+          <input id="ct-description" class="text-input" maxlength="256">
+          <label class="field-label" for="ct-author">Author</label>
+          <input id="ct-author" class="text-input" maxlength="96" style="margin-bottom:0.75rem;">
           <div class="card-actions" style="margin-bottom:0.75rem;">
             <button type="button" onclick="document.getElementById('ct-file-input').click()">Import from file&hellip;</button>
             <button type="button" onclick="exportCustomTheme()">Export to file</button>
             <button type="button" onclick="resetSwatchesToActive()">Reset to active</button>
             <input type="file" id="ct-file-input" accept=".json,application/json" hidden onchange="loadThemeFromFile(event)">
           </div>
-          <p class="muted" style="font-size:0.72rem;margin-top:-0.4rem;">Import/export use the same shape as a cybercore theme file (schema/themes/&lt;family&gt;/&lt;slug&gt;.json).</p>
+          <label class="field-label" for="ct-mode">Appearance</label>
+          <select id="ct-mode" class="text-input" onchange="changeThemeMode()"><option value="dark">Dark variant</option><option value="light">Light variant</option></select>
+          <label class="field-label" for="ct-font-ui">UI font</label>
+          <input id="ct-font-ui" class="text-input" value="Inter" oninput="previewCustomTheme()">
+          <label class="field-label" for="ct-font-mono">Monospace font</label>
+          <input id="ct-font-mono" class="text-input" value="JetBrains Mono" oninput="previewCustomTheme()">
+          <label class="field-label" for="ct-font-display">Display font</label>
+          <input id="ct-font-display" class="text-input" value="Oxanium" oninput="previewCustomTheme()">
+          <label class="field-label" for="ct-density">Density</label>
+          <select id="ct-density" class="text-input" onchange="previewCustomTheme()"><option>compact</option><option selected>comfortable</option><option>spacious</option></select>
+          <label class="field-label" for="ct-corners">Corners</label>
+          <select id="ct-corners" class="text-input" onchange="previewCustomTheme()"><option>sharp</option><option>soft</option><option>rounded</option></select>
+          <label class="field-label" for="ct-motion">Motion</label>
+          <select id="ct-motion" class="text-input" onchange="previewCustomTheme()"><option>full</option><option>reduced</option><option>none</option></select>
+          <p id="ct-contrast" class="muted" role="status" aria-live="polite"></p>
           <div id="ct-swatches" class="ct-grid"></div>
         </div>
         <div class="ct-preview">
@@ -132,16 +159,19 @@ pub fn layout(active_theme: &str, theme_options: &str, nav_active: &str, body: &
   </div>
 </div>
 <script>
+let ACTIVE_APPEARANCE = '{appearance}';
 function applyTheme(name) {{
   if (name.startsWith('custom:')) {{
     const css = localStorage.getItem(CT_PREFIX + name.slice(7));
     if (css) document.getElementById('theme-vars').textContent = css;
   }} else {{
-    fetch('/api/cybergrid/css/' + name)
-      .then(r => r.text())
-      .then(css => {{ document.getElementById('theme-vars').textContent = css; }});
+    fetch('/api/cybergrid/css/' + encodeURIComponent(name) + '?appearance=' + ACTIVE_APPEARANCE)
+      .then(r => {{ if (!r.ok) throw new Error('Theme unavailable'); return r.text(); }})
+      .then(css => {{ document.getElementById('theme-vars').textContent = css; }})
+      .catch(error => console.error(error));
+    fetch('/api/cybergrid/active/' + encodeURIComponent(name), {{ method: 'POST' }})
+      .catch(error => console.error('Could not save active theme', error));
   }}
-  localStorage.setItem('cyberdeck-theme', name);
   document.getElementById('theme-picker-label').textContent = name.startsWith('custom:') ? name.slice(7) : name;
   document.querySelectorAll('#theme-dropdown .theme-item').forEach(el => {{
     el.classList.toggle('selected', el.dataset.value === name);
@@ -150,6 +180,17 @@ function applyTheme(name) {{
 function selectTheme(name) {{
   applyTheme(name);
   closeAllDropdowns();
+}}
+async function toggleAppearance() {{
+  const next = ACTIVE_APPEARANCE === 'dark' ? 'light' : 'dark';
+  const response = await fetch('/api/cybergrid/appearance/' + next, {{method: 'POST'}});
+  if (!response.ok) {{ alert('Could not switch appearance.'); return; }}
+  ACTIVE_APPEARANCE = next;
+  document.getElementById('theme-appearance').textContent = next + ' mode';
+  const selected = document.querySelector('#theme-dropdown .theme-item.selected')?.dataset.value || '{active_theme}';
+  fetch('/api/cybergrid/css/' + encodeURIComponent(selected) + '?appearance=' + next)
+    .then(r => {{ if (!r.ok) throw new Error('Theme unavailable'); return r.text(); }})
+    .then(css => {{ document.getElementById('theme-vars').textContent = css; }});
 }}
 // Generic custom dropdown (theme picker, archive format, and any future
 // one) — a native <select>'s selected/hovered option always gets forced
@@ -185,9 +226,8 @@ document.addEventListener('keydown', (e) => {{
 
 window.addEventListener('DOMContentLoaded', () => {{
   loadCustomThemesIntoPicker();
-  const saved = localStorage.getItem('cyberdeck-theme') || '{active_theme}';
-  const exists = document.querySelector('#theme-dropdown .theme-item[data-value="' + CSS.escape(saved) + '"]') !== null;
-  applyTheme(exists ? saved : '{active_theme}');
+  const active = document.querySelector('#theme-dropdown .theme-item.selected')?.dataset.value || '{active_theme}';
+  applyTheme(active);
   restoreCatState();
 }});
 
@@ -228,12 +268,19 @@ document.addEventListener('keydown', e => {{
   if (e.key === 'Escape') {{ closeViewer(); closeThemeCreator(); }}
 }});
 
-// --- Custom themes: browser-local only, not part of the compiled-in
-// CYBERGRID schema (that needs a rebuild to pick up new theme files) ---
+// --- Shared CYBERGRID theme creator. Drafts preview locally; saved
+// documents and the selected theme are persisted by the shared engine. ---
 const CT_ROLES = ['bg', 'fg', 'acid', 'pink', 'purple', 'cyan', 'orange', 'red', 'panel', 'line', 'muted'];
 const CT_PREFIX = 'cyberdeck-custom-theme-';
 
 function openThemeCreator() {{
+  CT_PREVIOUS_THEME = document.querySelector('#theme-dropdown .theme-item.selected')?.dataset.value || '{active_theme}';
+  CT_MODE = 'dark'; CT_VARIANTS = {{}};
+  document.getElementById('ct-name').value = '';
+  document.getElementById('ct-family').value = 'custom';
+  document.getElementById('ct-description').value = '';
+  document.getElementById('ct-author').value = '';
+  document.getElementById('ct-mode').value = 'dark';
   const grid = document.getElementById('ct-swatches');
   const computed = getComputedStyle(document.documentElement);
   grid.innerHTML = CT_ROLES.map(role => {{
@@ -241,6 +288,7 @@ function openThemeCreator() {{
     return '<label class="ct-swatch">' + role +
       '<input type="color" id="ct-' + role + '" value="' + current + '" oninput="previewCustomTheme()"></label>';
   }}).join('');
+  previewCustomTheme();
   document.getElementById('theme-creator-overlay').hidden = false;
 }}
 function closeThemeCreator() {{
@@ -248,13 +296,30 @@ function closeThemeCreator() {{
   if (el) el.hidden = true;
   // Revert to whatever was actually saved/active — closing without Save
   // shouldn't leave an unsaved preview painted over the real theme.
-  applyTheme(localStorage.getItem('cyberdeck-theme') || '{active_theme}');
+  applyTheme(CT_PREVIOUS_THEME);
 }}
 function customThemeCss() {{
-  return ':root{{' + CT_ROLES.map(role => '--' + role + ':' + document.getElementById('ct-' + role).value + ';').join('') + '}}';
+  const doc = customThemeDocument(), palette = CT_MODE === 'light' ? (doc.variants.light || doc.palette) : doc.palette;
+  const safeFont = value => /^[A-Za-z0-9 _-]{{1,64}}$/.test(value) ? value : 'Inter';
+  const vars = {{'--bg': palette.bg, '--fg': palette.white, '--acid': palette.acid_green, '--pink': palette.hot_pink,
+    '--purple': palette.purple, '--cyan': palette.cyan, '--orange': palette.orange, '--red': palette.red,
+    '--panel': palette.panel, '--line': palette.line, '--muted': palette.muted,
+    '--font-ui': '"' + safeFont(doc.design.font_ui) + '",sans-serif', '--font-mono': '"' + safeFont(doc.design.font_mono) + '",monospace',
+    '--font-display': '"' + safeFont(doc.design.font_display) + '",sans-serif', '--density': {{compact: '0.85', comfortable: '1', spacious: '1.15'}}[doc.design.density],
+    '--radius': {{sharp: '2px', soft: '8px', rounded: '14px'}}[doc.design.corners],
+    '--dur-mid': {{full: '0.24s', reduced: '0.08s', none: '0s'}}[doc.design.motion]}};
+  const colors = ['--bg','--fg','--acid','--pink','--purple','--cyan','--orange','--red','--panel','--line','--muted'];
+  return ':root{{' + Object.entries(vars).map(([key,value]) => key + ':' + (colors.includes(key) ? '#' + value.replace('#','') : value) + ';').join('') + '}}';
 }}
-function previewCustomTheme() {{
+async function previewCustomTheme() {{
   document.getElementById('theme-vars').textContent = customThemeCss();
+  try {{
+    const response = await fetch('/api/cybergrid/validate', {{method: 'POST', headers: {{'Content-Type': 'application/json'}}, body: JSON.stringify(customThemeDocument())}});
+    const report = await response.json();
+    const contrast = CT_MODE === 'light' ? (report.light_contrast || report.contrast) : report.contrast;
+    const failed = (contrast?.checks || []).filter(check => !check.passes);
+    document.getElementById('ct-contrast').textContent = report.error || (failed.length ? 'Contrast needs attention: ' + failed.map(check => check.label + ' (' + check.ratio.toFixed(2) + ':1)').join(', ') : 'Contrast checks pass for tested text and accent pairs.');
+  }} catch (_) {{ document.getElementById('ct-contrast').textContent = 'Contrast check unavailable.'; }}
 }}
 // Accepts the exact same JSON shape as a real cybercore theme file
 // (schema/themes/<family>/<slug>.json — bare hex, no leading '#', field
@@ -265,6 +330,40 @@ const CT_FILE_KEY_MAP = {{
   bg: 'bg', white: 'fg', acid_green: 'acid', hot_pink: 'pink', purple: 'purple',
   cyan: 'cyan', orange: 'orange', red: 'red', panel: 'panel', line: 'line', muted: 'muted'
 }};
+let CT_VARIANTS = {{}};
+let CT_MODE = 'dark';
+let CT_PREVIOUS_THEME = '{active_theme}';
+
+function currentPalette() {{
+  const palette = {{}};
+  Object.entries(CT_FILE_KEY_MAP).forEach(([jsonKey, role]) => {{ palette[jsonKey] = document.getElementById('ct-' + role).value.replace('#', ''); }});
+  return palette;
+}}
+function showPalette(palette) {{
+  Object.entries(CT_FILE_KEY_MAP).forEach(([jsonKey, role]) => {{
+    const input = document.getElementById('ct-' + role);
+    if (input) input.value = '#' + (palette?.[jsonKey] || '888888').replace('#', '');
+  }});
+}}
+function changeThemeMode() {{
+  CT_VARIANTS[CT_MODE] = currentPalette();
+  CT_MODE = document.getElementById('ct-mode').value;
+  showPalette(CT_MODE === 'light' ? CT_VARIANTS.light : CT_VARIANTS.dark);
+  previewCustomTheme();
+}}
+function designValues() {{
+  return {{font_ui: document.getElementById('ct-font-ui').value, font_mono: document.getElementById('ct-font-mono').value,
+    font_display: document.getElementById('ct-font-display').value, density: document.getElementById('ct-density').value,
+    corners: document.getElementById('ct-corners').value, motion: document.getElementById('ct-motion').value}};
+}}
+function customThemeDocument() {{
+  CT_VARIANTS[CT_MODE] = currentPalette();
+  const name = document.getElementById('ct-name').value.trim() || 'Untitled theme';
+  const id = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 64) || 'custom-theme';
+  const dark = CT_VARIANTS.dark || CT_VARIANTS.light || currentPalette();
+  const variants = CT_VARIANTS.light ? {{light: CT_VARIANTS.light}} : {{}};
+  return {{format_version: 1, metadata: {{id, name, family: document.getElementById('ct-family').value.trim() || 'custom', description: document.getElementById('ct-description').value, author: document.getElementById('ct-author').value}}, palette: dark, variants, design: designValues()}};
+}}
 function loadThemeFromFile(event) {{
   const file = event.target.files[0];
   if (!file) return;
@@ -274,9 +373,10 @@ function loadThemeFromFile(event) {{
     try {{ data = JSON.parse(reader.result); }} catch (e) {{
       alert('Not valid JSON.'); return;
     }}
+    const palette = data.palette || data;
     let applied = 0;
     Object.entries(CT_FILE_KEY_MAP).forEach(([jsonKey, role]) => {{
-      const raw = data[jsonKey];
+      const raw = palette[jsonKey];
       if (typeof raw !== 'string' || !raw) return;
       const hex = raw.startsWith('#') ? raw : '#' + raw;
       const input = document.getElementById('ct-' + role);
@@ -285,6 +385,27 @@ function loadThemeFromFile(event) {{
     if (!applied) {{
       alert('That JSON has none of the expected fields (bg, white, acid_green, hot_pink, purple, cyan, orange, red, panel, line, muted) — expected the cybercore palette shape.');
       return;
+    }}
+    CT_VARIANTS = data.variants && typeof data.variants === 'object' ? data.variants : {{}};
+    if (data.palette) {{ CT_VARIANTS.dark = data.palette; CT_MODE = 'dark'; }}
+    document.getElementById('ct-mode').value = CT_MODE;
+    showPalette(CT_MODE === 'light' ? CT_VARIANTS.light : CT_VARIANTS.dark || palette);
+    if (data.metadata) {{
+      const metadata = data.metadata;
+      document.getElementById('ct-name').value = data.metadata.name || data.metadata.id || file.name.replace(/\.json$/i, '');
+      document.getElementById('ct-family').value = metadata.family || 'custom';
+      document.getElementById('ct-description').value = metadata.description || '';
+      document.getElementById('ct-author').value = metadata.author || '';
+    }} else {{
+      document.getElementById('ct-name').value = file.name.replace(/\.json$/i, '');
+    }}
+    if (data.design) {{
+      for (const key of ['font_ui','font_mono','font_display']) {{
+        if (typeof data.design[key] === 'string') document.getElementById('ct-' + key.replace('_', '-')).value = data.design[key];
+      }}
+      for (const key of ['density','corners','motion']) {{
+        if (typeof data.design[key] === 'string') document.getElementById('ct-' + key).value = data.design[key];
+      }}
     }}
     if (!document.getElementById('ct-name').value.trim()) {{
       document.getElementById('ct-name').value = file.name.replace(/\.json$/i, '');
@@ -295,11 +416,8 @@ function loadThemeFromFile(event) {{
 }}
 function exportCustomTheme() {{
   const name = document.getElementById('ct-name').value.trim() || 'custom-theme';
-  const data = {{}};
-  Object.entries(CT_FILE_KEY_MAP).forEach(([jsonKey, role]) => {{
-    const input = document.getElementById('ct-' + role);
-    if (input) data[jsonKey] = input.value.replace('#', '');
-  }});
+  document.getElementById('ct-name').value = name;
+  const data = customThemeDocument();
   const blob = new Blob([JSON.stringify(data, null, 2)], {{ type: 'application/json' }});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -311,31 +429,43 @@ function resetSwatchesToActive() {{
   // Reads the *actually saved* theme, not whatever's currently painted —
   // this dialog may already be mid-preview of unsaved edits, and "reset"
   // should mean "back to what was really active before I opened this."
-  applyTheme(localStorage.getItem('cyberdeck-theme') || '{active_theme}');
+  applyTheme(CT_PREVIOUS_THEME);
   const computed = getComputedStyle(document.documentElement);
   CT_ROLES.forEach(role => {{
     const input = document.getElementById('ct-' + role);
     if (input) input.value = computed.getPropertyValue('--' + role).trim() || '#888888';
   }});
 }}
-function saveCustomTheme() {{
+async function saveCustomTheme() {{
   const name = document.getElementById('ct-name').value.trim();
   if (!name) {{ alert('Name it first.'); return; }}
-  localStorage.setItem(CT_PREFIX + name, customThemeCss());
-  loadCustomThemesIntoPicker();
-  applyTheme('custom:' + name);
-  closeThemeCreator();
+  document.getElementById('ct-name').value = name;
+  const response = await fetch('/api/cybergrid/themes', {{method: 'POST', headers: {{'Content-Type': 'application/json'}}, body: JSON.stringify(customThemeDocument())}});
+  const result = await response.json();
+  if (!response.ok) {{ alert(result.error || 'Could not save theme.'); return; }}
+  await loadCustomThemesIntoPicker();
+  CT_PREVIOUS_THEME = result.id;
+  applyTheme(result.id);
+  document.getElementById('theme-creator-overlay').hidden = true;
 }}
-function loadCustomThemesIntoPicker() {{
+async function loadCustomThemesIntoPicker() {{
   const group = document.getElementById('custom-theme-group');
+  let themes = [];
+  try {{ const response = await fetch('/api/cybergrid/themes'); if (response.ok) themes = (await response.json()).themes.filter(theme => !theme.builtin); }} catch (_) {{}}
   const keys = Object.keys(localStorage).filter(k => k.startsWith(CT_PREFIX));
-  if (!keys.length) {{ group.hidden = true; group.innerHTML = ''; return; }}
+  if (!themes.length && !keys.length) {{ group.hidden = true; group.innerHTML = ''; return; }}
   group.hidden = false;
-  group.innerHTML = '<div class="theme-group-label">Custom (this browser)</div>' +
-    keys.map(k => {{
-      const name = k.slice(CT_PREFIX.length);
-      return '<div class="theme-item" data-value="custom:' + name + '" onclick="selectTheme(\'custom:' + name + '\')">' + name + '</div>';
-    }}).join('');
+  group.replaceChildren();
+  const title = document.createElement('div'); title.className = 'theme-group-label'; title.textContent = 'Custom themes'; group.appendChild(title);
+  for (const theme of themes) {{
+    const item = document.createElement('div'); item.className = 'theme-item'; item.dataset.value = theme.id; item.textContent = theme.name;
+    item.addEventListener('click', () => selectTheme(theme.id)); group.appendChild(item);
+  }}
+  for (const key of keys) {{
+    const name = key.slice(CT_PREFIX.length), item = document.createElement('div');
+    item.className = 'theme-item'; item.dataset.value = 'custom:' + name; item.textContent = name;
+    item.addEventListener('click', () => selectTheme('custom:' + name)); group.appendChild(item);
+  }}
 }}
 </script>
 </body>
@@ -343,6 +473,7 @@ function loadCustomThemesIntoPicker() {{
         nav_hub = nav("/", "Hub"),
         nav_scans = nav("/scans", "Scans"),
         nav_reports = nav("/reports", "Reports"),
+        appearance = appearance,
     )
 }
 
@@ -358,8 +489,12 @@ fn status_label(probe: &Probe, h: Health) -> &'static str {
     match (probe, h) {
         (Probe::Port(_), Health::Up) => "ONLINE",
         (Probe::Port(_), Health::Down) => "OFFLINE",
-        (Probe::SystemUnit(_) | Probe::AnySystemUnit(_) | Probe::UserUnit(_), Health::Up) => "ACTIVE",
-        (Probe::SystemUnit(_) | Probe::AnySystemUnit(_) | Probe::UserUnit(_), Health::Down) => "INACTIVE",
+        (Probe::SystemUnit(_) | Probe::AnySystemUnit(_) | Probe::UserUnit(_), Health::Up) => {
+            "ACTIVE"
+        }
+        (Probe::SystemUnit(_) | Probe::AnySystemUnit(_) | Probe::UserUnit(_), Health::Down) => {
+            "INACTIVE"
+        }
         (Probe::Binary(_), Health::Up) => "INSTALLED",
         (Probe::Binary(_), Health::Down) => "MISSING",
         (_, Health::Unknown) => "UNKNOWN",
@@ -383,7 +518,8 @@ fn tool_card(c: &Checked) -> String {
         ));
     }
     if actions.is_empty() {
-        actions.push_str(r#"<span class="muted" style="font-size:0.75rem;">no wiki page yet</span>"#);
+        actions
+            .push_str(r#"<span class="muted" style="font-size:0.75rem;">no wiki page yet</span>"#);
     }
 
     format!(
@@ -460,24 +596,132 @@ pub fn dashboard(checked: &[Checked]) -> String {
 /// (dispatcher command, card title, one-line description, id for DOM/JS,
 /// output filename under `diagnostics/`).
 pub const SCAN_MODULES: &[(&str, &str, &str, &str, &str)] = &[
-    ("RunCpuModule", "CPU", "Model, core count, frequency, load.", "cpu", "cpu/cpu.md"),
-    ("RunHardwareModule", "Hardware Core", "Full hardware inventory sweep.", "hw", "hardware.md"),
-    ("RunPowerModule", "Power Draw", "AC/battery state, wattage via upower.", "pwr", "power.md"),
-    ("RunMemoryModule", "Memory Banks", "RAM total/used, per-module DIMM info.", "mem", "memory.md"),
-    ("RunStorageAiModule", "Storage AI", "Heuristic storage health pass.", "stg", "storage_ai.md"),
-    ("RunThermalModule", "Thermal Array", "Sensor temps, raw + parsed.", "thm", "thermal_ai.md"),
-    ("RunNetworkModule", "Network Nodes", "Interfaces, addresses, link state.", "net", "network.md"),
-    ("RunFanModule", "Fan Velocity", "Fan RPM / PWM readouts.", "fan", "fan.md"),
-    ("RunAudioModule", "Audio Sinks", "PipeWire graph + sink/source summary.", "aud", "audio.md"),
-    ("RunBiosModule", "BIOS Layers", "Firmware, board, CPU, chipset, kernel, power sub-reports.", "bios", "bios.md"),
-    ("RunDisksModule", "Disk Topology", "Block devices, sizes, per-device detail.", "disk", "disks.md"),
-    ("RunBatteryModule", "Battery Health", "Capacity, cycle count, condition.", "bat", "battery/battery.md"),
-    ("RunServicesModule", "System Daemons", "systemd unit inventory.", "svc", "services.md"),
-    ("RunMotherboardModule", "Mainboard Bus", "Board model, vendor, revision.", "mobo", "motherboard/motherboard.md"),
-    ("RunGpuModule", "GPU", "VGA/3D controllers, driver bound, NVIDIA live stats if present.", "gpu", "gpu.md"),
-    ("RunUsbModule", "USB Devices", "Every enumerated USB device, bus/vendor/product.", "usb", "usb.md"),
-    ("RunKernelModulesModule", "Kernel Modules", "Loaded modules, size, dependents — largest first.", "kmod", "kernel_modules.md"),
-    ("RunMountsModule", "Mounted Filesystems", "What's mounted where, plus usage — not just block devices.", "mnt", "mounts.md"),
+    (
+        "RunCpuModule",
+        "CPU",
+        "Model, core count, frequency, load.",
+        "cpu",
+        "cpu/cpu.md",
+    ),
+    (
+        "RunHardwareModule",
+        "Hardware Core",
+        "Full hardware inventory sweep.",
+        "hw",
+        "hardware.md",
+    ),
+    (
+        "RunPowerModule",
+        "Power Draw",
+        "AC/battery state, wattage via upower.",
+        "pwr",
+        "power.md",
+    ),
+    (
+        "RunMemoryModule",
+        "Memory Banks",
+        "RAM total/used, per-module DIMM info.",
+        "mem",
+        "memory.md",
+    ),
+    (
+        "RunStorageAiModule",
+        "Storage AI",
+        "Heuristic storage health pass.",
+        "stg",
+        "storage_ai.md",
+    ),
+    (
+        "RunThermalModule",
+        "Thermal Array",
+        "Sensor temps, raw + parsed.",
+        "thm",
+        "thermal_ai.md",
+    ),
+    (
+        "RunNetworkModule",
+        "Network Nodes",
+        "Interfaces, addresses, link state.",
+        "net",
+        "network.md",
+    ),
+    (
+        "RunFanModule",
+        "Fan Velocity",
+        "Fan RPM / PWM readouts.",
+        "fan",
+        "fan.md",
+    ),
+    (
+        "RunAudioModule",
+        "Audio Sinks",
+        "PipeWire graph + sink/source summary.",
+        "aud",
+        "audio.md",
+    ),
+    (
+        "RunBiosModule",
+        "BIOS Layers",
+        "Firmware, board, CPU, chipset, kernel, power sub-reports.",
+        "bios",
+        "bios.md",
+    ),
+    (
+        "RunDisksModule",
+        "Disk Topology",
+        "Block devices, sizes, per-device detail.",
+        "disk",
+        "disks.md",
+    ),
+    (
+        "RunBatteryModule",
+        "Battery Health",
+        "Capacity, cycle count, condition.",
+        "bat",
+        "battery/battery.md",
+    ),
+    (
+        "RunServicesModule",
+        "System Daemons",
+        "systemd unit inventory.",
+        "svc",
+        "services.md",
+    ),
+    (
+        "RunMotherboardModule",
+        "Mainboard Bus",
+        "Board model, vendor, revision.",
+        "mobo",
+        "motherboard/motherboard.md",
+    ),
+    (
+        "RunGpuModule",
+        "GPU",
+        "VGA/3D controllers, driver bound, NVIDIA live stats if present.",
+        "gpu",
+        "gpu.md",
+    ),
+    (
+        "RunUsbModule",
+        "USB Devices",
+        "Every enumerated USB device, bus/vendor/product.",
+        "usb",
+        "usb.md",
+    ),
+    (
+        "RunKernelModulesModule",
+        "Kernel Modules",
+        "Loaded modules, size, dependents — largest first.",
+        "kmod",
+        "kernel_modules.md",
+    ),
+    (
+        "RunMountsModule",
+        "Mounted Filesystems",
+        "What's mounted where, plus usage — not just block devices.",
+        "mnt",
+        "mounts.md",
+    ),
 ];
 
 fn scan_card(cmd: &str, title: &str, desc: &str, id: &str, filename: &str, exists: bool) -> String {
@@ -501,7 +745,11 @@ fn scan_card(cmd: &str, title: &str, desc: &str, id: &str, filename: &str, exist
     <span id="view-{id}">{view}</span>
   </div>
 </div>"#,
-        badge_cls = if exists { "status-running" } else { "status-stopped" },
+        badge_cls = if exists {
+            "status-running"
+        } else {
+            "status-stopped"
+        },
         badge_label = if exists { "HAS OUTPUT" } else { "NO OUTPUT" },
     )
 }
@@ -650,9 +898,7 @@ fn folder_chip(folder: Option<&str>) -> String {
     match folder {
         Some(f) => {
             let color = folder_color(f);
-            format!(
-                r#"<span class="folder-chip" style="--chip-color: var(--{color});">{f}</span>"#
-            )
+            format!(r#"<span class="folder-chip" style="--chip-color: var(--{color});">{f}</span>"#)
         }
         None => r#"<span class="folder-chip folder-chip-root">root</span>"#.to_string(),
     }
