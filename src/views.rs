@@ -112,6 +112,34 @@ function selectTheme(name) {{
   applyTheme(name);
   closeAllDropdowns();
 }}
+// The catalog is shared on disk by Theme Studio and every Cybercore app.
+// Poll while visible so edits and selections in another app land live.
+let themeSyncBusy = false;
+async function syncSharedTheme() {{
+  if (themeSyncBusy || document.hidden) return;
+  themeSyncBusy = true;
+  try {{
+    const response = await fetch('/api/cybergrid/themes', {{ cache: 'no-store' }});
+    if (!response.ok) return;
+    const catalog = await response.json();
+    const known = [...document.querySelectorAll('#theme-dropdown .theme-item')].map(item => item.dataset.value).sort().join('\\0');
+    const current = catalog.themes.map(theme => theme.id).sort().join('\\0');
+    if (known !== current) {{ location.reload(); return; }}
+    const nextAppearance = catalog.appearance || 'dark';
+    if (catalog.active !== ACTIVE_THEME_ID || nextAppearance !== ACTIVE_APPEARANCE) {{
+      ACTIVE_THEME_ID = catalog.active;
+      ACTIVE_APPEARANCE = nextAppearance;
+      document.getElementById('theme-appearance').textContent = nextAppearance + ' mode';
+      document.getElementById('theme-picker-label').textContent = catalog.themes.find(t => t.id === catalog.active)?.name || catalog.active;
+      document.querySelectorAll('#theme-dropdown .theme-item').forEach(el => el.classList.toggle('selected', el.dataset.value === catalog.active));
+      const css = await fetch('/api/cybergrid/css/' + encodeURIComponent(catalog.active) + '?appearance=' + nextAppearance);
+      if (css.ok) document.getElementById('theme-vars').textContent = await css.text();
+    }}
+  }} catch (error) {{ console.debug('Shared theme refresh deferred', error); }}
+  finally {{ themeSyncBusy = false; }}
+}}
+setInterval(syncSharedTheme, 2000);
+document.addEventListener('visibilitychange', syncSharedTheme);
 async function toggleAppearance() {{
   const next = ACTIVE_APPEARANCE === 'dark' ? 'light' : 'dark';
   const response = await fetch('/api/cybergrid/appearance/' + next, {{method: 'POST'}});

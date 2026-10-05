@@ -14,6 +14,8 @@ Themes and the active appearance live in the per-user Cybercore configuration
 directory (`$XDG_CONFIG_HOME/cybercore`, or `~/.config/cybercore`). See the
 [theme engine contract](https://github.com/cybercore-tech/cybercore/blob/main/docs/theme-engine.md) for
 the portable JSON shape, validation rules, and Rust APIs.
+An open Hub page follows theme selections and appearance changes from Theme
+Studio or another Cybercore app while the page remains visible.
 
 ### *Systems Intelligence Framework (Arch Linux / Debian)*
 
