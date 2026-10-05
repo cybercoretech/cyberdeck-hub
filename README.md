@@ -2,7 +2,8 @@
 
 ## Shared CYBERGRID themes
 
-The Hub theme picker reads the shared Cybercore `ThemeCatalog`, including
+The Hub uses the published Cybercore 0.8 crate and reads the shared
+`ThemeCatalog`, including
 custom themes saved by [Cybercore Theme Studio](https://github.com/cybercore-tech/cybercore/tree/main/theme-studio).
 From a Cybercore checkout, start the Studio with `cargo run -p cybercore-theme-studio`;
 the Hub's highlighted **CYBERCORE // THEME STUDIO** header link and home-page
@@ -14,8 +15,9 @@ Themes and the active appearance live in the per-user Cybercore configuration
 directory (`$XDG_CONFIG_HOME/cybercore`, or `~/.config/cybercore`). See the
 [theme engine contract](https://github.com/cybercore-tech/cybercore/blob/main/docs/theme-engine.md) for
 the portable JSON shape, validation rules, and Rust APIs.
-An open Hub page follows theme selections and appearance changes from Theme
-Studio or another Cybercore app while the page remains visible.
+The Hub exposes `GET /api/cybergrid/events` as a server-sent event stream. An
+open page applies theme and appearance changes from Theme Studio or another
+Cybercore app as soon as the shared catalog changes.
 
 ### *Systems Intelligence Framework (Arch Linux / Debian)*
 

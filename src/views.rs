@@ -113,7 +113,7 @@ function selectTheme(name) {{
   closeAllDropdowns();
 }}
 // The catalog is shared on disk by Theme Studio and every Cybercore app.
-// Poll while visible so edits and selections in another app land live.
+// Receive a server-sent event when another Cybercore app changes the catalog.
 let themeSyncBusy = false;
 async function syncSharedTheme() {{
   if (themeSyncBusy || document.hidden) return;
@@ -138,7 +138,8 @@ async function syncSharedTheme() {{
   }} catch (error) {{ console.debug('Shared theme refresh deferred', error); }}
   finally {{ themeSyncBusy = false; }}
 }}
-setInterval(syncSharedTheme, 2000);
+const themeEvents = new EventSource('/api/cybergrid/events');
+themeEvents.addEventListener('theme-change', syncSharedTheme);
 document.addEventListener('visibilitychange', syncSharedTheme);
 async function toggleAppearance() {{
   const next = ACTIVE_APPEARANCE === 'dark' ? 'light' : 'dark';

@@ -102,6 +102,7 @@ async fn main() {
         .route("/cyberdeck/api/action", post(routes::post_cyberdeck_action))
         .route("/cyberdeck/api/list", get(routes::list_diagnostics))
         .route("/api/cybergrid/themes", get(cybergrid::list_themes))
+        .route("/api/cybergrid/events", get(cybergrid::theme_events))
         .route("/api/cybergrid/active/:id", post(cybergrid::select_theme))
         .route(
             "/api/cybergrid/appearance/:mode",
