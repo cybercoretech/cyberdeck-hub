@@ -6,7 +6,9 @@ The Hub theme picker reads the shared Cybercore `ThemeCatalog`, including
 custom themes saved by [Cybercore Theme Studio](https://github.com/cybercore-tech/cybercore/tree/main/theme-studio).
 From a Cybercore checkout, start the Studio with `cargo run -p cybercore-theme-studio`;
 the Hub's highlighted **CYBERCORE // THEME STUDIO** header link and home-page
-callout open its default address at `http://127.0.0.1:8761/`.
+callout open the Studio at `http://127.0.0.1:8761/` by default. Set
+`CYBERCORE_THEME_STUDIO_PORT` when running the Hub to match a locally
+configured Studio service on a different port.
 
 Themes and the active appearance live in the per-user Cybercore configuration
 directory (`$XDG_CONFIG_HOME/cybercore`, or `~/.config/cybercore`). See the

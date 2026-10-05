@@ -12,6 +12,19 @@ pub fn escape(s: &str) -> String {
         .replace('>', "&gt;")
 }
 
+fn theme_studio_url() -> String {
+    let port = std::env::var("CYBERCORE_THEME_STUDIO_PORT").ok();
+    theme_studio_url_for_port(port.as_deref())
+}
+
+fn theme_studio_url_for_port(port: Option<&str>) -> String {
+    let port = port
+        .and_then(|value| value.parse::<u16>().ok())
+        .filter(|port| *port != 0)
+        .unwrap_or(8761);
+    format!("http://127.0.0.1:{port}/")
+}
+
 pub fn layout(
     active_theme: &str,
     appearance: &str,
@@ -57,7 +70,7 @@ pub fn layout(
       </div>
       </div>
       <button type="button" class="btn-ghost" id="theme-appearance" onclick="toggleAppearance()">{appearance} mode</button>
-      <a class="btn-ghost theme-studio-link" href="http://127.0.0.1:8761/" target="_blank" rel="noopener" title="Open the standalone CYBERCORE // THEME STUDIO">CYBERCORE // THEME STUDIO ↗</a>
+      <a class="btn-ghost theme-studio-link" href="{studio_url}" target="_blank" rel="noopener" title="Open the standalone CYBERCORE // THEME STUDIO">CYBERCORE // THEME STUDIO ↗</a>
   </div>
 </header>
 <main>
@@ -210,6 +223,7 @@ async function loadCustomThemesIntoPicker() {{
         nav_hub = nav("/", "Hub"),
         nav_scans = nav("/scans", "Scans"),
         nav_reports = nav("/reports", "Reports"),
+        studio_url = theme_studio_url(),
         appearance = appearance,
     )
 }
@@ -318,6 +332,7 @@ pub fn dashboard(checked: &[Checked]) -> String {
     let up = checked.iter().filter(|c| c.health == Health::Up).count();
     let total = checked.len();
     let sections = hub_sections(checked);
+    let studio_url = theme_studio_url();
 
     format!(
         r#"<div class="dash-head">
@@ -326,7 +341,7 @@ pub fn dashboard(checked: &[Checked]) -> String {
 </div>
 <section class="studio-callout" aria-label="Cybercore Theme Studio">
   <div><strong>CYBERCORE // THEME STUDIO</strong><span>Create, preview, validate, and share themes across Cybercore apps.</span></div>
-  <a class="btn-ghost theme-studio-link" href="http://127.0.0.1:8761/" target="_blank" rel="noopener">OPEN THEME STUDIO ↗</a>
+  <a class="btn-ghost theme-studio-link" href="{studio_url}" target="_blank" rel="noopener">OPEN THEME STUDIO ↗</a>
 </section>
 <div id="hub-grid" hx-get="/partial/hub" hx-trigger="every 10s" hx-swap="innerHTML" hx-on::after-swap="restoreCatState()">
 {sections}
@@ -752,4 +767,22 @@ pub fn report_missing_fragment(path: &str) -> String {
 /// that container) — used by the popup viewer's `fetch()` call.
 pub fn report_fragment(content: &str) -> String {
     render_markdown(content)
+}
+
+#[cfg(test)]
+mod theme_studio_tests {
+    use super::theme_studio_url_for_port;
+
+    #[test]
+    fn studio_link_uses_configured_local_port_and_safe_default() {
+        assert_eq!(
+            theme_studio_url_for_port(Some("8762")),
+            "http://127.0.0.1:8762/"
+        );
+        assert_eq!(theme_studio_url_for_port(None), "http://127.0.0.1:8761/");
+        assert_eq!(
+            theme_studio_url_for_port(Some("bad")),
+            "http://127.0.0.1:8761/"
+        );
+    }
 }
