@@ -4,7 +4,7 @@
 
 The Hub uses the published Cybercore 0.8 crate and reads the shared
 `ThemeCatalog`, including
-custom themes saved by [Cybercore Theme Studio](https://github.com/cybercore-tech/cybercore/tree/main/theme-studio).
+custom themes saved by [Cybercore Theme Studio](https://github.com/cybercoretech/cybercore/tree/main/theme-studio).
 From a Cybercore checkout, start the Studio with `cargo run -p cybercore-theme-studio`;
 the Hub's highlighted **CYBERCORE // THEME STUDIO** header link and home-page
 callout open the Studio at `http://127.0.0.1:8761/` by default. Set
@@ -13,7 +13,7 @@ configured Studio service on a different port.
 
 Themes and the active appearance live in the per-user Cybercore configuration
 directory (`$XDG_CONFIG_HOME/cybercore`, or `~/.config/cybercore`). See the
-[theme engine contract](https://github.com/cybercore-tech/cybercore/blob/main/docs/theme-engine.md) for
+[theme engine contract](https://github.com/cybercoretech/cybercore/blob/main/docs/theme-engine.md) for
 the portable JSON shape, validation rules, and Rust APIs.
 The Hub exposes `GET /api/cybergrid/events` as a server-sent event stream. An
 open page applies theme and appearance changes from Theme Studio or another
@@ -26,7 +26,7 @@ Cybercore app as soon as the shared catalog changes.
 > **Status:** *Under Active Development* | **Language:** Rust *(2021)*
 > 
 > **Current Version:**
-> [Stable v1.1.0](https://github.com/cybercore-tech/cyberdeck/releases/tag/v1.1.0) 
+> [Stable v1.1.0](https://github.com/cybercoretech/cyberdeck/releases/tag/v1.1.0) 
 > 
 > **🛡️ <mark>Engineering Note</mark>: [Stack Stability]**
 
@@ -118,7 +118,7 @@ sudo pacman -Syu lshw pciutils usbutils lm_sensors iproute2
 
 ```bash
 # Clone the repository
-git clone https://github.com/cybercore-tech/cyberdeck.git
+git clone https://github.com/cybercoretech/cyberdeck.git
 cd cyberdeck
 
 # Run the panel (Opens @ 127.0.0.1:8080)

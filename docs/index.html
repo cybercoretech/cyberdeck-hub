@@ -68,7 +68,7 @@
 </head>
 <body>
   <header class="site-header">
-    <a class="brand" href="https://cybercore-tech.github.io/" data-brand-phase="0" aria-label="Cybercore Tech home"><span class="brand-emblem">CC</span><span class="brand-name">CYBERCORE <b>/</b> CYBERDECK HUB<small>CORE</small></span></a>
+    <a class="brand" href="https://cybercoretech.github.io/" data-brand-phase="0" aria-label="Cybercore Tech home"><span class="brand-emblem">CC</span><span class="brand-name">CYBERCORE <b>/</b> CYBERDECK HUB<small>CORE</small></span></a>
     <nav class="main-nav" aria-label="Primary"><a href="#board">BOARD</a><a href="#diagnostics">DIAGNOSTICS</a><a href="#gallery">GALLERY</a><a href="#setup">SETUP</a><a href="#themes">THEMES</a></nav>
     <div class="theme-picker"><span class="theme-label">THEME</span><button id="themeButton" class="theme-button" type="button" aria-haspopup="listbox" aria-expanded="false" aria-controls="themeMenu">LOADING THEMES…</button><div id="themeMenu" class="theme-menu" role="listbox" aria-label="Theme" hidden></div></div>
   </header>
@@ -81,7 +81,7 @@
         <p class="tagline">One board for the whole Cybercore stack — and every light on it tells the truth.</p>
         <p class="lede">The hub is the command center of a personal Cyberdeck build: a live tool board that probes every service, daemon and CLI in the family, one click to open, read the wiki page or find the repo — plus a deep hardware diagnostics engine that writes clean markdown reports.</p>
         <div class="chips"><span class="chip"><b>◆</b> LIVE HEALTH PROBES</span><span class="chip"><b>◆</b> 19 SCAN MODULES</span><span class="chip"><b>◆</b> CYBERGRID THEMES</span><span class="chip"><b>◆</b> 127.0.0.1</span></div>
-        <div class="cta"><a class="btn" href="https://github.com/cybercore-tech/cyberdeck-hub">VIEW SOURCE ↗</a><a class="btn ghost" href="#setup">RUN IT</a></div>
+        <div class="cta"><a class="btn" href="https://github.com/cybercoretech/cyberdeck-hub">VIEW SOURCE ↗</a><a class="btn ghost" href="#setup">RUN IT</a></div>
       </div>
       <div class="board reveal" aria-hidden="true">
         <svg viewBox="0 0 400 400">
@@ -132,7 +132,7 @@
       <div class="section-head reveal"><div><p class="eyebrow">03 / Setup</p><h2>Boot<br><em>the deck.</em></h2></div><p>The hub serves its web assets and reports relative to its repo, binds to loopback only, and takes its port from <code>CYBERDECK_PORT</code>. It never starts or stops anything — probes only ask.</p></div>
       <div class="grid g2">
         <div class="reveal"><span class="label">BUILD + RUN</span>
-<pre class="code" data-copy><code>git clone https://github.com/cybercore-tech/cyberdeck-hub
+<pre class="code" data-copy><code>git clone https://github.com/cybercoretech/cyberdeck-hub
 cd cyberdeck-hub && cargo build --release
 sudo pacman -S lshw pciutils usbutils lm_sensors iproute2
 
@@ -183,7 +183,7 @@ CapabilityBoundingSet=</code></pre></div>
     </section>
 
     <section class="wrap section" style="padding-top:0">
-      <div class="card c-purple related reveal"><div><span class="num">◆ THE FRAMEWORK</span><h3>CYBERDECK — SYSTEMS INTELLIGENCE</h3><p>The public CYBERDECK framework this personal hub build grew alongside.</p></div><a class="btn" href="https://github.com/cybercore-tech/cyberdeck">CYBERDECK ↗</a></div>
+      <div class="card c-purple related reveal"><div><span class="num">◆ THE FRAMEWORK</span><h3>CYBERDECK — SYSTEMS INTELLIGENCE</h3><p>The public CYBERDECK framework this personal hub build grew alongside.</p></div><a class="btn" href="https://github.com/cybercoretech/cyberdeck">CYBERDECK ↗</a></div>
     </section>
   </main>
 
@@ -191,7 +191,7 @@ CapabilityBoundingSet=</code></pre></div>
     <div class="wrap"><cybercore-contact repo="cyberdeck-hub"><a href="mailto:dev@cybercoretech.net">dev@cybercoretech.net</a></cybercore-contact></div>
   </section>
 
-  <footer><span>CYBERCORE TECH / CYBERDECK HUB / © <span id="year"></span></span><span><a href="https://cybercore-tech.github.io/">CYBERCORE-TECH.GITHUB.IO</a> · <a href="https://github.com/cybercore-tech/cyberdeck-hub">SOURCE</a></span></footer>
+  <footer><span>CYBERCORE TECH / CYBERDECK HUB / © <span id="year"></span></span><span><a href="https://cybercoretech.github.io/">CYBERCORE-TECH.GITHUB.IO</a> · <a href="https://github.com/cybercoretech/cyberdeck-hub">SOURCE</a></span></footer>
   <script>
     (() => { const el = document.getElementById('probeLine'); if (!el || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
       const p = ['argus.service → ACTIVE', 'vortexwall | vortexwall-enforce → ACTIVE', '127.0.0.1:7070 → ONLINE', 'sigilward-check.timer → ACTIVE', 'ghostport → INACTIVE', '127.0.0.1:3000 → ONLINE'];
@@ -214,6 +214,6 @@ CapabilityBoundingSet=</code></pre></div>
     })();
   </script>
   <script src="app.js"></script>
-  <script type="module" src="https://cybercore-tech.github.io/kit/contact.js"></script>
+  <script type="module" src="https://cybercoretech.github.io/kit/contact.js"></script>
 </body>
 </html>
