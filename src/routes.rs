@@ -230,6 +230,20 @@ pub async fn report_fragment(AxPath(rel_path): AxPath<String>) -> impl IntoRespo
     )
 }
 
+/// A report's Markdown source, for clients that render it themselves
+/// (Nightwatch on a phone) rather than embedding the HTML fragment.
+pub async fn report_markdown(AxPath(rel_path): AxPath<String>) -> impl IntoResponse {
+    let no_cache = (axum::http::header::CACHE_CONTROL, "no-store");
+    let md = (axum::http::header::CONTENT_TYPE, "text/markdown; charset=utf-8");
+    let Some(path) = safe_diagnostics_path(&rel_path) else {
+        return (axum::http::StatusCode::BAD_REQUEST, [no_cache, md], String::new());
+    };
+    match std::fs::read_to_string(&path) {
+        Ok(content) => (axum::http::StatusCode::OK, [no_cache, md], content),
+        Err(_) => (axum::http::StatusCode::NOT_FOUND, [no_cache, md], String::new()),
+    }
+}
+
 pub async fn get_cyberdeck_state(
     State(state): State<SharedCyberdeckState>,
 ) -> Json<crate::types::CyberdeckState> {

@@ -7,7 +7,9 @@
 
 mod cybergrid;
 mod dispatcher;
+mod guard;
 mod hub;
+mod localtoken;
 mod modules;
 mod parser;
 mod present;
@@ -94,6 +96,7 @@ async fn main() {
         .route("/reports", get(routes::reports_view))
         .route("/reports/*path", get(routes::report_view))
         .route("/api/reports/*path", get(routes::report_fragment))
+        .route("/api/reports-md/*path", get(routes::report_markdown))
         .route("/cyberdeck/api/state", get(routes::get_cyberdeck_state))
         .route(
             "/cyberdeck/api/command",
@@ -111,9 +114,16 @@ async fn main() {
         .route("/api/cybergrid/css/:name", get(cybergrid::theme_css))
         .route("/vendor/tokens.css", get(routes::tokens_css))
         .nest_service("/static", ServeDir::new("static"))
-        .with_state(state);
+        .with_state(state)
+        // Refuse cross-site / DNS-rebound requests (see guard.rs).
+        .layer(axum::middleware::from_fn(guard::middleware));
 
     let port = std::env::var("CYBERDECK_PORT").unwrap_or_else(|_| "8080".to_string());
+    let local = localtoken::LocalToken::create("cyberdeck");
+    if let Some(p) = local.path() {
+        tracing::info!("local-token for local clients: {}", p.display());
+    }
+    guard::init(port.parse().unwrap_or(8080), local);
     let listener = tokio::net::TcpListener::bind(format!("127.0.0.1:{}", port))
         .await
         .unwrap();
