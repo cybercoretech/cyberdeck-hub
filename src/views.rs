@@ -185,7 +185,6 @@ document.addEventListener('keydown', (e) => {{
 }});
 
 window.addEventListener('DOMContentLoaded', () => {{
-  loadCustomThemesIntoPicker();
   const active = document.querySelector('#theme-dropdown .theme-item.selected')?.dataset.value || '{active_theme}';
   applyTheme(active);
   restoreCatState();
@@ -234,7 +233,8 @@ async function loadCustomThemesIntoPicker() {{
   try {{
     const response = await fetch('/api/cybergrid/themes');
     if (!response.ok) throw new Error('theme catalog unavailable');
-    const themes = (await response.json()).themes.filter(theme => !theme.builtin);
+    const known = new Set([...document.querySelectorAll('#theme-dropdown .theme-item')].map(item => item.dataset.value));
+    const themes = (await response.json()).themes.filter(theme => !theme.builtin && !known.has(theme.id));
     group.replaceChildren();
     if (!themes.length) {{ group.hidden = true; return; }}
     group.hidden = false;

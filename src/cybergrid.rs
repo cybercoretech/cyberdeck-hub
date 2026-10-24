@@ -35,8 +35,7 @@ fn catalog() -> Result<cybercore::theme::ThemeCatalog, cybercore::theme::ThemeEr
     cybercore::theme::ThemeCatalog::load()
 }
 
-/// Group names come from embedded theme metadata, not slug guesses or a
-/// checkout-specific read of the Cybercore source tree.
+/// Group names come from theme metadata, including locally imported themes.
 pub fn theme_families() -> Vec<(String, Vec<String>)> {
     let Ok(catalog) = catalog() else {
         return Vec::new();
@@ -44,9 +43,6 @@ pub fn theme_families() -> Vec<(String, Vec<String>)> {
     let mut families: std::collections::BTreeMap<String, Vec<String>> =
         std::collections::BTreeMap::new();
     for (id, entry) in catalog.iter() {
-        if !entry.builtin {
-            continue;
-        }
         families
             .entry(entry.document.metadata.family.clone())
             .or_default()
