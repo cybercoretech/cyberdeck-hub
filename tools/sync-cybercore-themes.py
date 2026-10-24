@@ -52,6 +52,7 @@ def main() -> None:
 
     imported = 0
     skipped = 0
+    generated = set()
     for theme_id, source in sorted(canonical.items()):
         destination = THEMES / f"{theme_id}.json"
         if theme_id in builtin_ids:
@@ -63,10 +64,10 @@ def main() -> None:
             json.dumps(theme_document(source), indent=2) + "\n",
             encoding="utf-8",
         )
+        generated.add(theme_id)
         imported += 1
 
-    generated = sorted(set(canonical) - builtin_ids - {theme_id for theme_id in canonical if (THEMES / f"{theme_id}.json").exists() and theme_id not in previous})
-    GENERATED.write_text(json.dumps(generated, indent=2) + "\n", encoding="utf-8")
+    GENERATED.write_text(json.dumps(sorted(generated), indent=2) + "\n", encoding="utf-8")
     print(f"{imported} local themes imported, {skipped} existing custom themes preserved")
 
 
